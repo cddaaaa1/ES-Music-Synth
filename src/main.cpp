@@ -5,7 +5,7 @@
 // Constants
 const uint32_t interval = 100;                         // Display update interval
 const uint32_t fs = 22000;                             // Sampling frequency (Hz)
-const uint32_t phase_accumulator_modulus = 4294967296; // 2^32
+const uint64_t phase_accumulator_modulus = 4294967296; // 2^32
 
 // Pin definitions
 // Row select and enable
@@ -53,6 +53,8 @@ const uint32_t stepSizes[] = {
 };
 
 volatile uint32_t currentStepSize = 0;
+
+HardwareTimer sampleTimer(TIM1);
 
 // Display driver object
 U8G2_SSD1305_128X32_ADAFRUIT_F_HW_I2C u8g2(U8G2_R0);
@@ -109,6 +111,20 @@ std::bitset<4> readCols()
   return result;
 }
 
+void sampleISR()
+{
+  static uint32_t phaseAcc = 0; // Phase accumulator (static to retain value)
+
+  // Update phase accumulator
+  phaseAcc += currentStepSize;
+
+  // Convert phase accumulator to voltage output (Sawtooth waveform)
+  int32_t Vout = (phaseAcc >> 24) - 128; // Scale range: -128 to 127
+
+  // Convert to unsigned value for DAC output (0-255)
+  analogWrite(OUTR_PIN, Vout + 128);
+}
+
 void setup()
 {
   // put your setup code here, to run once:
@@ -140,6 +156,11 @@ void setup()
   // Initialise UART
   Serial.begin(9600);
   Serial.println("Hello World");
+
+  // ISR
+  sampleTimer.setOverflow(22000, HERTZ_FORMAT);
+  sampleTimer.attachInterrupt(sampleISR);
+  sampleTimer.resume();
 }
 
 void loop()
@@ -167,7 +188,7 @@ void loop()
     {
       int keyIndex = row * 4 + col;
       inputs[keyIndex] = colInputs[col];
-      if (colInputs[col])
+      if (!colInputs[col])
       {
         lastPressedKey = keyIndex; // Store the last pressed key
       }
@@ -200,13 +221,16 @@ void loop()
     u8g2.print("None");
   }
 
+  u8g2.setCursor(2, 30);
+  u8g2.print(inputs.to_ulong(), HEX);
   u8g2.sendBuffer();
 
   // Debugging output to Serial Monitor
-  Serial.print("Pressed Key: ");
-  Serial.print(lastPressedKey);
-  Serial.print(" Step Size: ");
-  Serial.println(currentStepSize);
+  // Serial.print("Pressed Key: ");
+  // Serial.print(lastPressedKey);
+  // Serial.print(" Step Size: ");
+  // Serial.println(currentStepSize);
+  // Serial.println(inputs.to_string().c_str());
 
   // Toggle LED
   digitalToggle(LED_BUILTIN);
