@@ -2,7 +2,6 @@
 #include <U8g2lib.h>
 #include <bitset>
 #include <STM32FreeRTOS.h> // FreeRTOS for threading support
-#include "Knob.h"
 
 // Constants
 const uint32_t interval = 100;                         // Display update interval
@@ -37,7 +36,6 @@ const uint32_t stepSizes[] = {
 // **Global Variable
 volatile uint32_t currentStepSize = 0;
 std::bitset<2> prevKnobState = 0;
-Knob knob3(0, 8);
 
 struct // Struct to Store System State
 {
@@ -126,11 +124,29 @@ void scanKeysTask(void *pvParameters)
     }
 
     // **Knob 3 Decoding (A = localInputs[12], B = localInputs[13])**
-    currentKnobState[0] = localInputs[14]; // A
-    currentKnobState[1] = localInputs[15]; // B
+    currentKnobState[0] = localInputs[12]; // A
+    currentKnobState[1] = localInputs[13]; // B
 
-    knob3.updateRotation(currentKnobState);
-    localVolume = knob3.getRotationValue();
+    if (prevKnobState != currentKnobState)
+    {
+      if (prevKnobState == std::bitset<2>("00") && currentKnobState == std::bitset<2>("01"))
+        localRotationVariable = +1;
+      else if (prevKnobState == std::bitset<2>("11") && currentKnobState == std::bitset<2>("10"))
+        localRotationVariable = +1;
+      else if (prevKnobState == std::bitset<2>("10") && currentKnobState == std::bitset<2>("11"))
+        localRotationVariable = -1;
+      else if (prevKnobState == std::bitset<2>("01") && currentKnobState == std::bitset<2>("00"))
+        localRotationVariable = -1;
+      else if ((prevKnobState == std::bitset<2>("00") && currentKnobState == std::bitset<2>("11")) ||
+               (prevKnobState == std::bitset<2>("11") && currentKnobState == std::bitset<2>("00")))
+        ;
+      else
+        localRotationVariable = 0;
+    }
+
+    prevKnobState = currentKnobState;
+
+    localVolume = constrain(localVolume + localRotationVariable, 0, 8);
 
     // Update global system state atomically and with mutex(copy the input state method)
     if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
@@ -141,11 +157,9 @@ void scanKeysTask(void *pvParameters)
       xSemaphoreGive(sysState.mutex);
     }
 
-    // Update `currentStepSize` atomically
+    // Update currentStepSize atomically
     uint32_t localCurrentStepSize = (lastPressedKey >= 0 && lastPressedKey < 12) ? stepSizes[lastPressedKey] : 0;
     __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
-
-    Serial.println(knob3.getRotationValue());
 
     // Print Rotation Variable
     // if (localRotationVariable == 1)
