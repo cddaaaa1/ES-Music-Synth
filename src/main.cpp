@@ -2,17 +2,12 @@
 #include <U8g2lib.h>
 #include <bitset>
 #include <STM32FreeRTOS.h> // FreeRTOS for threading support
+#include "Knob.h"
 
 // Constants
 const uint32_t interval = 100;                         // Display update interval
 const uint32_t fs = 22000;                             // Sampling frequency (Hz)
 const uint64_t phase_accumulator_modulus = 4294967296; // 2^32 using bit shift
-
-// Struct to Store System State
-struct
-{
-  std::bitset<32> inputs; // Stores the key states
-} sysState;
 
 // Pin Definitions
 const int RA0_PIN = D3, RA1_PIN = D6, RA2_PIN = D12, REN_PIN = A5, C0_PIN = A2, C1_PIN = D9, C2_PIN = A6, C3_PIN = D1, OUT_PIN = D11, OUTL_PIN = A4, OUTR_PIN = A3, JOYY_PIN = A0, JOYX_PIN = A1;
@@ -39,8 +34,18 @@ const uint32_t stepSizes[] = {
     static_cast<uint32_t>((phase_accumulator_modulus * 987.77) / fs)  // B5
 };
 
-// **Global Variable Updated Atomically**
+// **Global Variable
 volatile uint32_t currentStepSize = 0;
+std::bitset<2> prevKnobState = 0;
+Knob knob3(0, 8);
+
+struct // Struct to Store System State
+{
+  std::bitset<32> inputs;
+  SemaphoreHandle_t mutex;
+  int rotationVariable;
+  int volume;
+} sysState;
 
 HardwareTimer sampleTimer(TIM1);
 U8G2_SSD1305_128X32_ADAFRUIT_F_HW_I2C u8g2(U8G2_R0);
@@ -68,7 +73,14 @@ void sampleISR()
   static uint32_t phaseAcc = 0;
   phaseAcc += currentStepSize;
   int32_t Vout = (phaseAcc >> 24) - 128; // Scale range: -128 to 127
-  analogWrite(OUTR_PIN, Vout + 128);     // Convert to unsigned (0-255) for DAC
+
+  int volumeLevel = 8;
+
+  volumeLevel = sysState.volume; // Read volume safely
+
+  Vout = Vout >> (8 - volumeLevel);
+
+  analogWrite(OUTR_PIN, Vout + 128); // Convert to unsigned (0-255) for DAC
 }
 
 // **Key Scanning Task (Runs in a Separate Thread)**
@@ -80,8 +92,11 @@ void scanKeysTask(void *pvParameters)
   {
     std::bitset<32> localInputs;
     int lastPressedKey = -1;
+    std::bitset<2> currentKnobState;
+    int localRotationVariable = 0;
+    int localVolume = sysState.volume;
 
-    for (uint8_t row = 0; row < 3; row++)
+    for (uint8_t row = 0; row < 4; row++)
     {
       // Select row
       digitalWrite(REN_PIN, LOW);
@@ -103,19 +118,44 @@ void scanKeysTask(void *pvParameters)
       {
         int keyIndex = row * 4 + col;
         localInputs[keyIndex] = colInputs[col];
-        if (!colInputs[col])
+        if (!colInputs[col] && keyIndex <= 11 && keyIndex >= 0)
         {
           lastPressedKey = keyIndex;
         }
       }
     }
 
-    // Update global system state atomically
-    sysState.inputs = localInputs;
+    // **Knob 3 Decoding (A = localInputs[12], B = localInputs[13])**
+    currentKnobState[0] = localInputs[14]; // A
+    currentKnobState[1] = localInputs[15]; // B
+
+    knob3.updateRotation(currentKnobState);
+    localVolume = knob3.getRotationValue();
+
+    // Update global system state atomically and with mutex(copy the input state method)
+    if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
+    {
+      memcpy(&sysState.inputs, &localInputs, sizeof(sysState.inputs)); // Copy input state
+      sysState.rotationVariable = localRotationVariable;
+      sysState.volume = localVolume;
+      xSemaphoreGive(sysState.mutex);
+    }
 
     // Update `currentStepSize` atomically
     uint32_t localCurrentStepSize = (lastPressedKey >= 0 && lastPressedKey < 12) ? stepSizes[lastPressedKey] : 0;
     __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
+
+    Serial.println(knob3.getRotationValue());
+
+    // Print Rotation Variable
+    // if (localRotationVariable == 1)
+    // {
+    //   Serial.println("1");
+    // }
+    // if (localRotationVariable == -1)
+    // {
+    //   Serial.println("-1");
+    // }
 
     // vTaskDelay(pdMS_TO_TICKS(5)); // Add slight delay to prevent excessive CPU usage
   }
@@ -130,6 +170,15 @@ void displayUpdateTask(void *pvParameters)
   {
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
+    std::bitset<32> localInputs;
+
+    // Lock mutex briefly to copy global state
+    if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
+    {
+      memcpy(&localInputs, &sysState.inputs, sizeof(localInputs));
+      xSemaphoreGive(sysState.mutex);
+    }
+
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_ncenB08_tr);
     u8g2.drawStr(2, 10, "Note:");
@@ -138,7 +187,7 @@ void displayUpdateTask(void *pvParameters)
     int lastPressedKey = -1;
     for (int i = 0; i < 12; i++)
     {
-      if (sysState.inputs[i])
+      if (!localInputs[i])
       {
         lastPressedKey = i;
       }
@@ -199,6 +248,12 @@ void setup()
 
   xTaskCreate(scanKeysTask, "scanKeys", 128, NULL, 1, &scanKeysHandle);
   xTaskCreate(displayUpdateTask, "displayUpdate", 256, NULL, 2, &displayTaskHandle);
+
+  // add mutux for multithreading synchronization
+  sysState.mutex = xSemaphoreCreateMutex();
+
+  // setup volum initial
+  sysState.volume = 4;
 
   // **Start RTOS Scheduler**
   vTaskStartScheduler();
