@@ -8,7 +8,7 @@ class Knob
 {
 private:
     int rotationValue; // Current rotation value
-    int lastUpdateValue = 0;
+    int rotationVariable;
     int lowerLimit;           // Minimum limit for rotation
     int upperLimit;           // Maximum limit for rotation
     std::bitset<2> prevState; // Previous state of the quadrature inputs
@@ -31,31 +31,29 @@ public:
         {
             if (prevState == std::bitset<2>("00") && currentState == std::bitset<2>("01"))
             {
-                rotationValue = constrain(rotationValue + 1, lowerLimit, upperLimit);
-                lastUpdateValue = 1;
+                rotationVariable = +1;
             }
             else if (prevState == std::bitset<2>("11") && currentState == std::bitset<2>("10"))
             {
-                rotationValue = constrain(rotationValue + 1, lowerLimit, upperLimit);
-                lastUpdateValue = 1;
+                rotationVariable = +1;
             }
             else if (prevState == std::bitset<2>("10") && currentState == std::bitset<2>("11"))
             {
-                rotationValue = constrain(rotationValue - 1, lowerLimit, upperLimit);
-                lastUpdateValue = -1;
+                rotationVariable = -1;
             }
             else if (prevState == std::bitset<2>("01") && currentState == std::bitset<2>("00"))
             {
-                rotationValue = constrain(rotationValue - 1, lowerLimit, upperLimit);
-                lastUpdateValue = -1;
+                rotationVariable = -1;
             }
             else if ((prevState == std::bitset<2>("00") && currentState == std::bitset<2>("11")) ||
                      (prevState == std::bitset<2>("11") && currentState == std::bitset<2>("00")))
-            {
-                rotationValue = constrain(rotationValue + lastUpdateValue, lowerLimit, upperLimit);
-            }
+                rotationVariable = 0;
+            else
+                rotationVariable = 0;
         }
         prevState = currentState;
+        rotationValue = constrain(rotationValue + rotationVariable, lowerLimit, upperLimit);
+        //Serial.println(rotationVariable);
     }
 
     // Get the current rotation value
