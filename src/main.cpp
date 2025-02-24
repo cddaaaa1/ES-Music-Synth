@@ -39,7 +39,6 @@ const uint32_t stepSizes[] = {
 volatile uint32_t currentStepSize = 0;
 std::bitset<2> prevKnobState = 0;
 Knob knob3(0, 8);
-volatile uint8_t TX_Message[8] = {0};
 
 struct // Struct to Store System State
 {
@@ -97,6 +96,7 @@ void scanKeysTask(void *pvParameters)
     std::bitset<2> currentKnobState;
     int localRotationVariable = 0;
     int localVolume = sysState.volume;
+    uint8_t TX_Message[8] = {0};
 
     for (uint8_t row = 0; row < 4; row++)
     {
@@ -125,12 +125,10 @@ void scanKeysTask(void *pvParameters)
           lastPressedKey = keyIndex;
           TX_Message[0] = 'P';
           TX_Message[2] = lastPressedKey;
-          // CAN_TX(0x123, TX_Message);
+          CAN_TX(0x123, TX_Message);
         }
       }
     }
-    // CAN bus communcation
-    TX_Message[2] = lastPressedKey;
     // **Knob 3 Decoding (A = localInputs[12], B = localInputs[13])**
     currentKnobState[0] = localInputs[12]; // A
     currentKnobState[1] = localInputs[13]; // B
@@ -171,7 +169,8 @@ void displayUpdateTask(void *pvParameters)
 {
   const TickType_t xFrequency = 100 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
-
+  uint8_t RX_Message[8] = {0};
+  uint32_t ID = 0x123;
   while (1)
   {
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
@@ -203,11 +202,6 @@ void displayUpdateTask(void *pvParameters)
     {
       const char *noteNames[] = {"C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5"};
       u8g2.print(noteNames[lastPressedKey]);
-      // CAN bus communication
-      u8g2.setCursor(66, 30);
-      u8g2.print((char)TX_Message[0]);
-      u8g2.print(TX_Message[1]);
-      u8g2.print(TX_Message[2]);
     }
     else
     {
@@ -217,6 +211,14 @@ void displayUpdateTask(void *pvParameters)
     u8g2.setCursor(2, 30);
     u8g2.print(sysState.inputs.to_ulong(), HEX);
 
+    while (CAN_CheckRXLevel())
+    {
+      CAN_RX(ID, RX_Message);
+      u8g2.setCursor(66, 30);
+      u8g2.print((char)RX_Message[0]);
+      u8g2.print(RX_Message[1]);
+      u8g2.print(RX_Message[2]);
+    }
     u8g2.sendBuffer();
 
     // Toggle LED (Real-time scheduling indicator)
@@ -266,6 +268,11 @@ void setup()
 
   // setup volum initial
   sysState.volume = 4;
+
+  // CAN bus initialization
+  CAN_Init(true);
+  setCANFilter(0x123, 0x7ff);
+  CAN_Start();
 
   // **Start RTOS Scheduler**
   vTaskStartScheduler();
