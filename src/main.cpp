@@ -3,6 +3,7 @@
 #include <bitset>
 #include <STM32FreeRTOS.h> // FreeRTOS for threading support
 #include "Knob.h"
+#include <ES_CAN.h>
 
 // Constants
 const uint32_t interval = 100;                         // Display update interval
@@ -38,6 +39,7 @@ const uint32_t stepSizes[] = {
 volatile uint32_t currentStepSize = 0;
 std::bitset<2> prevKnobState = 0;
 Knob knob3(0, 8);
+volatile uint8_t TX_Message[8] = {0};
 
 struct // Struct to Store System State
 {
@@ -121,13 +123,17 @@ void scanKeysTask(void *pvParameters)
         if (!colInputs[col] && keyIndex <= 11 && keyIndex >= 0)
         {
           lastPressedKey = keyIndex;
+          TX_Message[0] = 'P';
+          TX_Message[2] = lastPressedKey;
+          // CAN_TX(0x123, TX_Message);
         }
       }
     }
-
+    // CAN bus communcation
+    TX_Message[2] = lastPressedKey;
     // **Knob 3 Decoding (A = localInputs[12], B = localInputs[13])**
-    currentKnobState[0] = localInputs[14]; // A
-    currentKnobState[1] = localInputs[15]; // B
+    currentKnobState[0] = localInputs[12]; // A
+    currentKnobState[1] = localInputs[13]; // B
 
     knob3.updateRotation(currentKnobState);
     localVolume = knob3.getRotationValue();
@@ -145,7 +151,7 @@ void scanKeysTask(void *pvParameters)
     uint32_t localCurrentStepSize = (lastPressedKey >= 0 && lastPressedKey < 12) ? stepSizes[lastPressedKey] : 0;
     __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
 
-    Serial.println(knob3.getRotationValue());
+    // Serial.println(knob3.getRotationValue());
 
     // Print Rotation Variable
     // if (localRotationVariable == 1)
@@ -197,6 +203,11 @@ void displayUpdateTask(void *pvParameters)
     {
       const char *noteNames[] = {"C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5"};
       u8g2.print(noteNames[lastPressedKey]);
+      // CAN bus communication
+      u8g2.setCursor(66, 30);
+      u8g2.print((char)TX_Message[0]);
+      u8g2.print(TX_Message[1]);
+      u8g2.print(TX_Message[2]);
     }
     else
     {
@@ -205,6 +216,7 @@ void displayUpdateTask(void *pvParameters)
 
     u8g2.setCursor(2, 30);
     u8g2.print(sysState.inputs.to_ulong(), HEX);
+
     u8g2.sendBuffer();
 
     // Toggle LED (Real-time scheduling indicator)
