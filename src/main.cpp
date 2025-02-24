@@ -39,7 +39,8 @@ const uint32_t stepSizes[] = {
 volatile uint32_t currentStepSize = 0;
 std::bitset<2> prevKnobState = 0;
 Knob knob3(0, 8);
-
+QueueHandle_t msgInQ;
+uint8_t RX_Message[8] = {0};
 struct // Struct to Store System State
 {
   std::bitset<32> inputs;
@@ -68,6 +69,14 @@ void setOutMuxBit(const uint8_t bitIdx, const bool value)
   digitalWrite(REN_PIN, LOW);
 }
 
+void CAN_RX_ISR(void)
+{
+  uint8_t RX_Message_ISR[8];
+  uint32_t ID = 0X123;
+  CAN_RX(ID, RX_Message_ISR);
+  xQueueSendFromISR(msgInQ, RX_Message_ISR, NULL);
+}
+
 // **Interrupt Service Routine for Audio Generation**
 void sampleISR()
 {
@@ -84,6 +93,15 @@ void sampleISR()
   analogWrite(OUTR_PIN, Vout + 128); // Convert to unsigned (0-255) for DAC
 }
 
+void decodeTask(void *pvParameters)
+{
+  uint8_t RX_Message[8] = {0};
+  while (1)
+  {
+    xQueueReceive(msgInQ, RX_Message, portMAX_DELAY);
+  }
+}
+
 // **Key Scanning Task (Runs in a Separate Thread)**
 void scanKeysTask(void *pvParameters)
 {
@@ -96,6 +114,7 @@ void scanKeysTask(void *pvParameters)
     std::bitset<2> currentKnobState;
     int localRotationVariable = 0;
     int localVolume = sysState.volume;
+    std::bitset<32> previousInput = sysState.inputs;
     uint8_t TX_Message[8] = {0};
 
     for (uint8_t row = 0; row < 4; row++)
@@ -120,12 +139,23 @@ void scanKeysTask(void *pvParameters)
       {
         int keyIndex = row * 4 + col;
         localInputs[keyIndex] = colInputs[col];
-        if (!colInputs[col] && keyIndex <= 11 && keyIndex >= 0)
+
+        // scan key
+        if (keyIndex <= 11 && keyIndex >= 0)
         {
-          lastPressedKey = keyIndex;
-          TX_Message[0] = 'P';
-          TX_Message[2] = lastPressedKey;
-          CAN_TX(0x123, TX_Message);
+          if (!colInputs[col])
+          {
+            lastPressedKey = keyIndex;
+            TX_Message[0] = 'P';
+            TX_Message[2] = lastPressedKey;
+            CAN_TX(0x123, TX_Message);
+          }
+          if (!previousInput[keyIndex] && colInputs[col])
+          {
+            TX_Message[0] = 'R';
+            TX_Message[2] = keyIndex;
+            CAN_TX(0x123, TX_Message);
+          }
         }
       }
     }
@@ -148,20 +178,6 @@ void scanKeysTask(void *pvParameters)
     // Update `currentStepSize` atomically
     uint32_t localCurrentStepSize = (lastPressedKey >= 0 && lastPressedKey < 12) ? stepSizes[lastPressedKey] : 0;
     __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
-
-    // Serial.println(knob3.getRotationValue());
-
-    // Print Rotation Variable
-    // if (localRotationVariable == 1)
-    // {
-    //   Serial.println("1");
-    // }
-    // if (localRotationVariable == -1)
-    // {
-    //   Serial.println("-1");
-    // }
-
-    // vTaskDelay(pdMS_TO_TICKS(5)); // Add slight delay to prevent excessive CPU usage
   }
 }
 
@@ -211,14 +227,11 @@ void displayUpdateTask(void *pvParameters)
     u8g2.setCursor(2, 30);
     u8g2.print(sysState.inputs.to_ulong(), HEX);
 
-    while (CAN_CheckRXLevel())
-    {
-      CAN_RX(ID, RX_Message);
-      u8g2.setCursor(66, 30);
-      u8g2.print((char)RX_Message[0]);
-      u8g2.print(RX_Message[1]);
-      u8g2.print(RX_Message[2]);
-    }
+    u8g2.setCursor(66, 30);
+    u8g2.print((char)RX_Message[0]);
+    u8g2.print(RX_Message[1]);
+    u8g2.print(RX_Message[2]);
+
     u8g2.sendBuffer();
 
     // Toggle LED (Real-time scheduling indicator)
@@ -269,9 +282,16 @@ void setup()
   // setup volum initial
   sysState.volume = 4;
 
+  // message queue
+  msgInQ = xQueueCreate(36, 8);
+
+  // decode message thread
+  xTaskCreate(decodeTask, "decodeTask", 128, NULL, 2, NULL);
+
   // CAN bus initialization
-  CAN_Init(true);
+  CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
+  CAN_RegisterRX_ISR(CAN_RX_ISR);
   CAN_Start();
 
   // **Start RTOS Scheduler**
