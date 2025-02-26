@@ -40,6 +40,7 @@ volatile uint32_t currentStepSize = 0;
 std::bitset<2> prevKnobState = 0;
 Knob knob3(0, 8);
 QueueHandle_t msgInQ;
+// QueueHandle_t msgOutQ;
 uint8_t RX_Message[8] = {0};
 struct // Struct to Store System State
 {
@@ -95,21 +96,28 @@ void sampleISR()
 
 void decodeTask(void *pvParameters)
 {
-  // uint8_t RX_Message[8] = {0};
+  uint8_t local_RX_Message[8] = {0};
   while (1)
   {
-    xQueueReceive(msgInQ, RX_Message, portMAX_DELAY);
+    xQueueReceive(msgInQ, local_RX_Message, portMAX_DELAY);
     uint32_t localCurrentStepSize;
+
+    if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
+    {
+      memcpy(RX_Message, local_RX_Message, sizeof(RX_Message));
+      xSemaphoreGive(sysState.mutex);
+    }
     if (RX_Message[0] == 'P')
     {
       // localCurrentStepSize = stepSizes[RX_Message[2]] * (2 ^ (RX_Message[1] - 4));
       // localCurrentStepSize = stepSizes[RX_Message[2]] << (RX_Message[1] - 4);
-      localCurrentStepSize = stepSizes[RX_Message[2]];
+      localCurrentStepSize = stepSizes[local_RX_Message[2]];
     }
     else if (RX_Message[0] == 'R')
     {
       localCurrentStepSize = 0;
     }
+
     __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
   }
 }
