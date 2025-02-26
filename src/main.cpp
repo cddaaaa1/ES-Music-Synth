@@ -95,7 +95,7 @@ void sampleISR()
 
 void decodeTask(void *pvParameters)
 {
-  uint8_t RX_Message[8] = {0};
+  // uint8_t RX_Message[8] = {0};
   while (1)
   {
     xQueueReceive(msgInQ, RX_Message, portMAX_DELAY);
@@ -185,7 +185,6 @@ void displayUpdateTask(void *pvParameters)
 {
   const TickType_t xFrequency = 100 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  uint8_t RX_Message[8] = {0};
   uint32_t ID = 0x123;
   while (1)
   {
@@ -232,10 +231,12 @@ void displayUpdateTask(void *pvParameters)
     u8g2.print(RX_Message[1]);
     u8g2.print(RX_Message[2]);
 
+    u8g2.setCursor(66, 10);
+    u8g2.print(sysState.volume);
     u8g2.sendBuffer();
 
     // Toggle LED (Real-time scheduling indicator)
-    digitalToggle(LED_BUILTIN);
+    // digitalToggle(LED_BUILTIN);
   }
 }
 
@@ -285,14 +286,14 @@ void setup()
   // message queue
   msgInQ = xQueueCreate(36, 8);
 
-  // decode message thread
-  xTaskCreate(decodeTask, "decodeTask", 128, NULL, 2, NULL);
-
   // CAN bus initialization
   CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
   CAN_RegisterRX_ISR(CAN_RX_ISR);
   CAN_Start();
+
+  // decode message thread
+  xTaskCreate(decodeTask, "decodeTask", 128, NULL, 3, NULL);
 
   // **Start RTOS Scheduler**
   vTaskStartScheduler();
