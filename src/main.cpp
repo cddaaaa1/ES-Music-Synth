@@ -99,6 +99,18 @@ void decodeTask(void *pvParameters)
   while (1)
   {
     xQueueReceive(msgInQ, RX_Message, portMAX_DELAY);
+    uint32_t localCurrentStepSize;
+    if (RX_Message[0] == 'P')
+    {
+      // localCurrentStepSize = stepSizes[RX_Message[2]] * (2 ^ (RX_Message[1] - 4));
+      // localCurrentStepSize = stepSizes[RX_Message[2]] << (RX_Message[1] - 4);
+      localCurrentStepSize = stepSizes[RX_Message[2]];
+    }
+    else if (RX_Message[0] == 'R')
+    {
+      localCurrentStepSize = 0;
+    }
+    __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
   }
 }
 
@@ -147,12 +159,14 @@ void scanKeysTask(void *pvParameters)
           {
             lastPressedKey = keyIndex;
             TX_Message[0] = 'P';
+            TX_Message[1] = 4;
             TX_Message[2] = lastPressedKey;
             CAN_TX(0x123, TX_Message);
           }
           if (!previousInput[keyIndex] && colInputs[col])
           {
             TX_Message[0] = 'R';
+            TX_Message[1] = 4;
             TX_Message[2] = keyIndex;
             CAN_TX(0x123, TX_Message);
           }
@@ -176,8 +190,11 @@ void scanKeysTask(void *pvParameters)
     }
 
     // Update `currentStepSize` atomically
-    uint32_t localCurrentStepSize = (lastPressedKey >= 0 && lastPressedKey < 12) ? stepSizes[lastPressedKey] : 0;
-    __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
+    if (RX_Message[0] == 'R')
+    {
+      uint32_t localCurrentStepSize = (lastPressedKey >= 0 && lastPressedKey < 12) ? stepSizes[lastPressedKey] : 0;
+      __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
+    }
   }
 }
 
