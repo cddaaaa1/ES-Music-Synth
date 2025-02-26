@@ -40,7 +40,8 @@ volatile uint32_t currentStepSize = 0;
 std::bitset<2> prevKnobState = 0;
 Knob knob3(0, 8);
 QueueHandle_t msgInQ;
-// QueueHandle_t msgOutQ;
+QueueHandle_t msgOutQ;
+SemaphoreHandle_t CAN_TX_Semaphore;
 uint8_t RX_Message[8] = {0};
 struct // Struct to Store System State
 {
@@ -68,6 +69,11 @@ void setOutMuxBit(const uint8_t bitIdx, const bool value)
   digitalWrite(REN_PIN, HIGH);
   delayMicroseconds(2);
   digitalWrite(REN_PIN, LOW);
+}
+
+void CAN_TX_ISR(void)
+{
+  xSemaphoreGiveFromISR(CAN_TX_Semaphore, NULL);
 }
 
 void CAN_RX_ISR(void)
@@ -122,6 +128,17 @@ void decodeTask(void *pvParameters)
   }
 }
 
+void CAN_TX_Task(void *pvParameters)
+{
+  uint8_t msgOut[8];
+  while (1)
+  {
+    xQueueReceive(msgOutQ, msgOut, portMAX_DELAY);
+    xSemaphoreTake(CAN_TX_Semaphore, portMAX_DELAY);
+    CAN_TX(0x123, msgOut);
+  }
+}
+
 // **Key Scanning Task (Runs in a Separate Thread)**
 void scanKeysTask(void *pvParameters)
 {
@@ -169,14 +186,16 @@ void scanKeysTask(void *pvParameters)
             TX_Message[0] = 'P';
             TX_Message[1] = 4;
             TX_Message[2] = lastPressedKey;
-            CAN_TX(0x123, TX_Message);
+            xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
+            // CAN_TX(0x123, TX_Message);
           }
           if (!previousInput[keyIndex] && colInputs[col])
           {
             TX_Message[0] = 'R';
             TX_Message[1] = 4;
             TX_Message[2] = keyIndex;
-            CAN_TX(0x123, TX_Message);
+            xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
+            // CAN_TX(0x123, TX_Message);
           }
         }
       }
@@ -310,15 +329,23 @@ void setup()
 
   // message queue
   msgInQ = xQueueCreate(36, 8);
+  msgOutQ = xQueueCreate(36, 8);
 
   // CAN bus initialization
   CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
   CAN_RegisterRX_ISR(CAN_RX_ISR);
+  CAN_RegisterTX_ISR(CAN_TX_ISR); // transmit ISR
   CAN_Start();
 
   // decode message thread
   xTaskCreate(decodeTask, "decodeTask", 128, NULL, 3, NULL);
+
+  // transmit thread
+  xTaskCreate(CAN_TX_Task, "CAN_TX_Task", 128, NULL, 4, NULL);
+
+  // transmit
+  CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
 
   // **Start RTOS Scheduler**
   vTaskStartScheduler();
