@@ -4,7 +4,7 @@
 #include <STM32FreeRTOS.h> // FreeRTOS for threading support
 #include "Knob.h"
 #include <ES_CAN.h>
-#define OCTAVE 4
+#define OCTAVE 5
 
 // Constants
 const uint32_t interval = 100;                         // Display update interval
@@ -221,26 +221,32 @@ void scanKeysTask(void *pvParameters)
           if (!colInputs[col])
           {
             lastPressedKey = keyIndex;
-            TX_Message[0] = 'P';
-            TX_Message[1] = OCTAVE;
-            TX_Message[2] = lastPressedKey;
-            xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
             if (OCTAVE == 4)
             {
               keys4.set(keyIndex, true);
               __atomic_store_n(&currentStepSize, stepSizes4[lastPressedKey], __ATOMIC_RELAXED);
             }
+            else
+            {
+              TX_Message[0] = 'P';
+              TX_Message[1] = OCTAVE;
+              TX_Message[2] = lastPressedKey;
+              xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
+            }
           }
           if (!previousInput[keyIndex] && colInputs[col])
           {
-            TX_Message[0] = 'R';
-            TX_Message[1] = OCTAVE;
-            TX_Message[2] = keyIndex;
-            xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
             if (OCTAVE == 4)
             {
               keys4.set(keyIndex, false);
               __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
+            }
+            else
+            {
+              TX_Message[0] = 'R';
+              TX_Message[1] = OCTAVE;
+              TX_Message[2] = keyIndex;
+              xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
             }
           }
         }
