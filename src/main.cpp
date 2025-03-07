@@ -4,6 +4,7 @@
 #include <STM32FreeRTOS.h> // FreeRTOS for threading support
 #include "Knob.h"
 #include <ES_CAN.h>
+#define OCTAVE 4
 
 // Constants
 const uint32_t interval = 100;                         // Display update interval
@@ -20,19 +21,34 @@ const int HKOW_BIT = 5;
 const int HKOE_BIT = 6;
 
 // Step Sizes for Notes C5 to B5
-const uint32_t stepSizes[] = {
-    static_cast<uint32_t>((phase_accumulator_modulus * 523.25) / fs), // C5
-    static_cast<uint32_t>((phase_accumulator_modulus * 554.37) / fs), // C#5/Db5
-    static_cast<uint32_t>((phase_accumulator_modulus * 587.33) / fs), // D5
-    static_cast<uint32_t>((phase_accumulator_modulus * 622.25) / fs), // D#5/Eb5
-    static_cast<uint32_t>((phase_accumulator_modulus * 659.25) / fs), // E5
-    static_cast<uint32_t>((phase_accumulator_modulus * 698.46) / fs), // F5
-    static_cast<uint32_t>((phase_accumulator_modulus * 739.99) / fs), // F#5/Gb5
-    static_cast<uint32_t>((phase_accumulator_modulus * 783.99) / fs), // G5
-    static_cast<uint32_t>((phase_accumulator_modulus * 830.61) / fs), // G#5/Ab5
-    static_cast<uint32_t>((phase_accumulator_modulus * 880.00) / fs), // A5
-    static_cast<uint32_t>((phase_accumulator_modulus * 932.33) / fs), // A#5/Bb5
-    static_cast<uint32_t>((phase_accumulator_modulus * 987.77) / fs)  // B5
+const uint32_t stepSizes5[12] = {
+    102151892, // C5
+    108227319, // C#5
+    114661960, // D5
+    121479245, // D#5
+    128702599, // E5
+    136357402, // F5
+    144465129, // F#5
+    153055064, // G5
+    162156490, // G#5
+    171798691, // A5
+    182014857, // A#5
+    192838174  // B5
+};
+
+const uint32_t stepSizes4[12] = {
+    51075946, // C4
+    54113659, // C#4
+    57330980, // D4
+    60739622, // D#4
+    64351299, // E4
+    68178701, // F4
+    72232564, // F#4
+    76527532, // G4
+    81078245, // G#4
+    85899345, // A4
+    91007428, // A#4
+    96419087  // B4
 };
 
 // **Global Variable
@@ -43,6 +59,9 @@ QueueHandle_t msgInQ;
 QueueHandle_t msgOutQ;
 SemaphoreHandle_t CAN_TX_Semaphore;
 uint8_t RX_Message[8] = {0};
+static std::bitset<12> keys4; // local pressed keys
+static std::bitset<12> keys5;
+
 struct // Struct to Store System State
 {
   std::bitset<32> inputs;
@@ -113,18 +132,37 @@ void decodeTask(void *pvParameters)
       memcpy(RX_Message, local_RX_Message, sizeof(RX_Message));
       xSemaphoreGive(sysState.mutex);
     }
-    if (RX_Message[0] == 'P')
+    char msgType = local_RX_Message[0];
+    uint8_t msgOctave = local_RX_Message[1];
+    uint8_t noteIndex = local_RX_Message[2];
+
+    if (msgType == 'P')
     {
-      // localCurrentStepSize = stepSizes[RX_Message[2]] * (2 ^ (RX_Message[1] - 4));
-      // localCurrentStepSize = stepSizes[RX_Message[2]] << (RX_Message[1] - 4);
-      localCurrentStepSize = stepSizes[local_RX_Message[2]];
+      if (OCTAVE == 4)
+      {
+        if (msgOctave == 5)
+        {
+          localCurrentStepSize = stepSizes5[noteIndex];
+          keys5.set(noteIndex, true);
+        }
+      }
     }
-    else if (RX_Message[0] == 'R')
+    else if (msgType == 'R')
     {
-      localCurrentStepSize = 0;
+      if (OCTAVE == 4)
+      {
+        if (msgOctave == 5)
+        {
+          localCurrentStepSize = 0;
+          keys5.set(noteIndex, false);
+        }
+      }
     }
 
-    __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
+    if (OCTAVE == 4)
+    {
+      __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
+    }
   }
 }
 
@@ -184,18 +222,24 @@ void scanKeysTask(void *pvParameters)
           {
             lastPressedKey = keyIndex;
             TX_Message[0] = 'P';
-            TX_Message[1] = 4;
+            TX_Message[1] = OCTAVE;
             TX_Message[2] = lastPressedKey;
             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
-            // CAN_TX(0x123, TX_Message);
+            if (OCTAVE == 4)
+            {
+              __atomic_store_n(&currentStepSize, stepSizes4[lastPressedKey], __ATOMIC_RELAXED);
+            }
           }
           if (!previousInput[keyIndex] && colInputs[col])
           {
             TX_Message[0] = 'R';
-            TX_Message[1] = 4;
+            TX_Message[1] = OCTAVE;
             TX_Message[2] = keyIndex;
             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
-            // CAN_TX(0x123, TX_Message);
+            if (OCTAVE == 4)
+            {
+              __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
+            }
           }
         }
       }
@@ -217,11 +261,11 @@ void scanKeysTask(void *pvParameters)
     }
 
     // Update `currentStepSize` atomically
-    if (RX_Message[0] == 'R')
-    {
-      uint32_t localCurrentStepSize = (lastPressedKey >= 0 && lastPressedKey < 12) ? stepSizes[lastPressedKey] : 0;
-      __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
-    }
+    // if (RX_Message[0] == 'R')
+    // {
+    //   uint32_t localCurrentStepSize = (lastPressedKey >= 0 && lastPressedKey < 12) ? stepSizes[lastPressedKey] : 0;
+    //   __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
+    // }
   }
 }
 
@@ -245,28 +289,63 @@ void displayUpdateTask(void *pvParameters)
 
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_ncenB08_tr);
-    u8g2.drawStr(2, 10, "Note:");
-    u8g2.setCursor(2, 20);
+    // u8g2.drawStr(2, 10, "Note:");
+    // u8g2.setCursor(2, 20);
 
-    int lastPressedKey = -1;
-    for (int i = 0; i < 12; i++)
+    // int lastPressedKey = -1;
+    // for (int i = 0; i < 12; i++)
+    // {
+    //   if (!localInputs[i])
+    //   {
+    //     lastPressedKey = i;
+    //   }
+    // }
+
+    // if (lastPressedKey >= 0)
+    // {
+    //   const char *noteNames[] = {"C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5"};
+    //   u8g2.print(noteNames[lastPressedKey]);
+    // }
+    // else
+    // {
+    //   u8g2.print("None");
+    // }
+
+    if (OCTAVE == 4)
     {
-      if (!localInputs[i])
+      u8g2.drawStr(2, 10, "Notes:");
+
+      // Build a string of currently pressed local and remote keys
+      // For local keys (C4 range) and remote keys (C5 range)
+      int cursorx = 0;
+
+      // For local keys:
+      // which bit = true? Show that note name with "C4" style
+      for (int i = 0; i < 12; i++)
       {
-        lastPressedKey = i;
+        if (keys4[i])
+        {
+          const char *localNoteNames[12] =
+              {"C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4"};
+          u8g2.setCursor(cursorx, 20);
+          u8g2.print(localNoteNames[i]);
+          cursorx += 10;
+        }
+      }
+
+      for (int i = 0; i < 12; i++)
+      {
+        if (keys5[i])
+        {
+          // remote note names for C5
+          const char *remoteNoteNames[12] =
+              {"C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5"};
+          u8g2.setCursor(cursorx, 20);
+          u8g2.print(remoteNoteNames[i]);
+          cursorx += 20;
+        }
       }
     }
-
-    if (lastPressedKey >= 0)
-    {
-      const char *noteNames[] = {"C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5"};
-      u8g2.print(noteNames[lastPressedKey]);
-    }
-    else
-    {
-      u8g2.print("None");
-    }
-
     u8g2.setCursor(2, 30);
     u8g2.print(sysState.inputs.to_ulong(), HEX);
 
