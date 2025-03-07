@@ -227,6 +227,7 @@ void scanKeysTask(void *pvParameters)
             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
             if (OCTAVE == 4)
             {
+              keys4.set(keyIndex, true);
               __atomic_store_n(&currentStepSize, stepSizes4[lastPressedKey], __ATOMIC_RELAXED);
             }
           }
@@ -238,6 +239,7 @@ void scanKeysTask(void *pvParameters)
             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
             if (OCTAVE == 4)
             {
+              keys4.set(keyIndex, false);
               __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
             }
           }
@@ -329,7 +331,7 @@ void displayUpdateTask(void *pvParameters)
               {"C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4"};
           u8g2.setCursor(cursorx, 20);
           u8g2.print(localNoteNames[i]);
-          cursorx += 10;
+          cursorx += 20;
         }
       }
 
