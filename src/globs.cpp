@@ -11,11 +11,27 @@ const uint32_t stepSizes5[12] = {
     128702599, 136357402, 144465129, 153055064,
     162156490, 171798691, 182014857, 192838174};
 
+const uint32_t stepSizes6[12] = {
+    204303784, 216454638, 229323920, 242958490,
+    257405198, 272714804, 288930258, 306110128,
+    324312980, 343597382, 364029714, 385676348};
+
 // Actual global variables
 volatile uint32_t currentStepSize = 0;
+volatile uint32_t currentStepSize1 = 0;
+volatile uint32_t currentStepSize2 = 0;
+volatile uint32_t currentStepSize3 = 0;
+volatile uint32_t currentStepSize4 = 0;
+volatile uint32_t currentStepSize5 = 0;
+uint32_t phaseAcc1 = 0;
+uint32_t phaseAcc2 = 0;
+uint32_t phaseAcc3 = 0;
+uint32_t phaseAcc4 = 0;
+uint32_t phaseAcc5 = 0;
 
 std::bitset<12> keys4;
 std::bitset<12> keys5;
+std::bitset<12> keys6;
 
 std::bitset<2> prevKnobState = 0;
 Knob knob3(0, 8);
@@ -45,18 +61,4 @@ void setOutMuxBit(const uint8_t bitIdx, const bool value)
     digitalWrite(A5, HIGH);
     delayMicroseconds(2);
     digitalWrite(A5, LOW);
-}
-
-// --------- The 22kHz Audio ISR --------------------
-void sampleISR()
-{
-    static uint32_t phaseAcc = 0;
-    phaseAcc += currentStepSize;
-    int32_t Vout = (phaseAcc >> 24) - 128; // range: -128..127
-
-    int volumeLevel = sysState.volume;
-    Vout = Vout >> (8 - volumeLevel);
-
-    // Output on e.g. OUTR_PIN = A3
-    analogWrite(A3, Vout + 128); // 0..255 for DAC
 }

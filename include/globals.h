@@ -9,7 +9,7 @@
 #include "Knob.h"
 
 // ---------------------- CONFIG ----------------------
-#define OCTAVE 5 // or 4, depending on the board
+#define OCTAVE 4 // or 4, depending on the board
 
 // Audio sampling frequency
 static const uint32_t fs = 22000;
@@ -17,13 +17,24 @@ static const uint32_t fs = 22000;
 // Step size arrays for C4 & C5
 extern const uint32_t stepSizes4[12];
 extern const uint32_t stepSizes5[12];
-
+extern const uint32_t stepSizes6[12];
 // ------------------ Global Variables ---------------
 extern volatile uint32_t currentStepSize;
+extern volatile uint32_t currentStepSize1;
+extern volatile uint32_t currentStepSize2;
+extern volatile uint32_t currentStepSize3;
+extern volatile uint32_t currentStepSize4;
+extern volatile uint32_t currentStepSize5;
+extern uint32_t phaseAcc1;
+extern uint32_t phaseAcc2;
+extern uint32_t phaseAcc3;
+extern uint32_t phaseAcc4;
+extern uint32_t phaseAcc5;
 
 // Pressed-key tracking
 extern std::bitset<12> keys4;
 extern std::bitset<12> keys5;
+extern std::bitset<12> keys6;
 
 extern std::bitset<2> prevKnobState;
 extern Knob knob3;

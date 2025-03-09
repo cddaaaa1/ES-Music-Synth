@@ -1,8 +1,10 @@
 #include <Arduino.h>
 #include "globals.h" // For all our shared globals
 #include "can.h"     // For CAN tasks and ISRs
-#include "tasks.h"   // For scanKeysTask, displayUpdateTask
+#include "key.h"     // for scanKeysTask(...)
+#include "display.h" // For scanKeysTask, displayUpdateTask
 #include "pins.h"
+#include "isr.h"
 
 void setup()
 {

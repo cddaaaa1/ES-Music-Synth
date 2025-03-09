@@ -50,6 +50,16 @@ void decodeTask(void *pvParameters)
                 keys5.set(noteIx, false);
             }
 
+            if (msgType == 'P' && msgOct == 6)
+            {
+                localCurrentStepSize = stepSizes6[noteIx];
+                keys6.set(noteIx, true);
+            }
+            else if (msgType == 'R' && msgOct == 6)
+            {
+                localCurrentStepSize = 0;
+                keys6.set(noteIx, false);
+            }
             // Actually update the step size
             __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
         }
