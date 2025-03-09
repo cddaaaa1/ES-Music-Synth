@@ -56,6 +56,10 @@ struct SystemState
 
 extern SystemState sysState;
 
+// sampler
+extern volatile bool samplerEnabled;
+extern volatile TickType_t samplerLoopStartTime;
+
 // The hardware timer for 22 kHz
 extern HardwareTimer sampleTimer;
 extern U8G2_SSD1305_128X32_ADAFRUIT_F_HW_I2C u8g2;

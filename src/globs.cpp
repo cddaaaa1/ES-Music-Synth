@@ -44,6 +44,9 @@ uint8_t RX_Message[8] = {0};
 
 SystemState sysState;
 
+volatile bool samplerEnabled = true;
+volatile TickType_t samplerLoopStartTime = 0;
+
 HardwareTimer sampleTimer(TIM1);
 U8G2_SSD1305_128X32_ADAFRUIT_F_HW_I2C u8g2(U8G2_R0);
 

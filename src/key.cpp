@@ -1,12 +1,12 @@
 #include "key.h"     // Corresponding header
 #include "globals.h" // For global variables, e.g., sysState, keys4, ...
 #include "pins.h"    // For pin definitions (RA0_PIN, etc.)
+#include "sampler.h"
 #include <bitset>
 
 #include <vector>
 #include <bitset>
 #include <stdint.h>
-
 #define MAX_VOICES 5
 
 // Use an enum to distinguish the keyboard source
@@ -207,6 +207,10 @@ void scanKeysTask(void *pvParameters)
                             TX_Message[2] = lastPressedKey;
                             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
                         }
+                        if (samplerEnabled && previousInput[keyIndex])
+                        {
+                            sampler_recordEvent('P', OCTAVE, (uint8_t)keyIndex);
+                        }
                     }
                     if (!previousInput[keyIndex] && colInputs[col])
                     {
@@ -214,6 +218,10 @@ void scanKeysTask(void *pvParameters)
                         {
                             keys4.set(keyIndex, false);
                             __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
+                            if (samplerEnabled)
+                            {
+                                sampler_recordEvent('R', OCTAVE, (uint8_t)keyIndex);
+                            }
                         }
                         else
                         {
@@ -221,6 +229,10 @@ void scanKeysTask(void *pvParameters)
                             TX_Message[1] = OCTAVE;
                             TX_Message[2] = keyIndex;
                             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
+                        }
+                        if (samplerEnabled)
+                        {
+                            sampler_recordEvent('R', OCTAVE, (uint8_t)keyIndex);
                         }
                     }
                 }
