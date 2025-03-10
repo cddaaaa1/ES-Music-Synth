@@ -192,13 +192,17 @@ void scanKeysTask(void *pvParameters)
                 // scan key
                 if (keyIndex <= 11 && keyIndex >= 0)
                 {
-                    if (!colInputs[col])
+                    if (previousInput[keyIndex] && !colInputs[col])
                     {
                         lastPressedKey = keyIndex;
                         if (OCTAVE == 4)
                         {
                             keys4.set(keyIndex, true);
                             __atomic_store_n(&currentStepSize, stepSizes4[lastPressedKey], __ATOMIC_RELAXED);
+                            if (samplerEnabled)
+                            {
+                                sampler_recordEvent('P', OCTAVE, (uint8_t)keyIndex);
+                            }
                         }
                         else
                         {
@@ -207,10 +211,10 @@ void scanKeysTask(void *pvParameters)
                             TX_Message[2] = lastPressedKey;
                             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
                         }
-                        if (samplerEnabled && previousInput[keyIndex])
-                        {
-                            sampler_recordEvent('P', OCTAVE, (uint8_t)keyIndex);
-                        }
+                        // if (samplerEnabled && previousInput[keyIndex])
+                        // {
+                        //     sampler_recordEvent('P', OCTAVE, (uint8_t)keyIndex);
+                        // }
                     }
                     if (!previousInput[keyIndex] && colInputs[col])
                     {
@@ -230,10 +234,10 @@ void scanKeysTask(void *pvParameters)
                             TX_Message[2] = keyIndex;
                             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
                         }
-                        if (samplerEnabled)
-                        {
-                            sampler_recordEvent('R', OCTAVE, (uint8_t)keyIndex);
-                        }
+                        // if (samplerEnabled)
+                        // {
+                        //     sampler_recordEvent('R', OCTAVE, (uint8_t)keyIndex);
+                        // }
                     }
                 }
             }

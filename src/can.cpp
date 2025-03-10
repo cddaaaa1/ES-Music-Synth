@@ -1,5 +1,6 @@
 #include "globals.h"
 #include "can.h"
+#include "sampler.h"
 
 void CAN_TX_ISR(void)
 {
@@ -43,25 +44,41 @@ void decodeTask(void *pvParameters)
             {
                 localCurrentStepSize = stepSizes5[noteIx];
                 keys5.set(noteIx, true);
+                if (samplerEnabled)
+                {
+                    sampler_recordEvent('P', 5, (uint8_t)noteIx);
+                }
             }
             else if (msgType == 'R' && msgOct == 5)
             {
                 localCurrentStepSize = 0;
                 keys5.set(noteIx, false);
+                if (samplerEnabled)
+                {
+                    sampler_recordEvent('R', 5, (uint8_t)noteIx);
+                }
             }
 
             if (msgType == 'P' && msgOct == 6)
             {
                 localCurrentStepSize = stepSizes6[noteIx];
                 keys6.set(noteIx, true);
+                if (samplerEnabled)
+                {
+                    sampler_recordEvent('P', 6, (uint8_t)noteIx);
+                }
             }
             else if (msgType == 'R' && msgOct == 6)
             {
                 localCurrentStepSize = 0;
                 keys6.set(noteIx, false);
+                if (samplerEnabled)
+                {
+                    sampler_recordEvent('R', 6, (uint8_t)noteIx);
+                }
             }
             // Actually update the step size
-            __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
+            //__atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
         }
     }
 }

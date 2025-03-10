@@ -38,15 +38,38 @@ static SemaphoreHandle_t samplerMutex = NULL;
 // state (keys4 and currentStepSize) to mimic a key press or release.
 void simulateKeyEvent(const NoteEvent &event)
 {
-    if (event.type == 'P')
+    if (event.octave == 4)
     {
-        keys4.set(event.noteIndex, true);
-        __atomic_store_n(&currentStepSize, stepSizes4[event.noteIndex], __ATOMIC_RELAXED);
+        if (event.type == 'P')
+        {
+            keys4.set(event.noteIndex, true);
+        }
+        else if (event.type == 'R')
+        {
+            keys4.set(event.noteIndex, false);
+        }
     }
-    else if (event.type == 'R')
+    if (event.octave == 5)
     {
-        keys4.set(event.noteIndex, false);
-        __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
+        if (event.type == 'P')
+        {
+            keys5.set(event.noteIndex, true);
+        }
+        else if (event.type == 'R')
+        {
+            keys5.set(event.noteIndex, false);
+        }
+    }
+    if (event.octave == 6)
+    {
+        if (event.type == 'P')
+        {
+            keys6.set(event.noteIndex, true);
+        }
+        else if (event.type == 'R')
+        {
+            keys6.set(event.noteIndex, false);
+        }
     }
 }
 
@@ -150,9 +173,11 @@ void metronomeTask(void *pvParameters)
     const TickType_t beatDelay = pdMS_TO_TICKS(60000UL / BPM);
     while (1)
     {
-        // Toggle the LED to indicate a metronome tick.
+        // Toggle the LED for a visual metronome cue.
         digitalToggle(LED_BUILTIN);
+        // Trigger the tick sound:
+        metronomeActive = true;
+        metronomeCounter = TICK_DURATION_SAMPLES;
         vTaskDelay(beatDelay);
-        __atomic_store_n(&currentStepSize, 10000, __ATOMIC_RELAXED);
     }
 }

@@ -65,9 +65,12 @@ void setup()
     xTaskCreate(decodeTask, "decodeTask", 128, NULL, 3, NULL);
     xTaskCreate(CAN_TX_Task, "CAN_TX_Task", 128, NULL, 4, NULL);
 
-    sampler_init();
-    xTaskCreate(samplerTask, "samplerTask", 256, NULL, 5, NULL);
-    xTaskCreate(metronomeTask, "metronomeTask", 128, NULL, 6, NULL);
+    if (OCTAVE == 4)
+    {
+        sampler_init();
+        xTaskCreate(samplerTask, "samplerTask", 256, NULL, 5, NULL);
+        xTaskCreate(metronomeTask, "metronomeTask", 128, NULL, 6, NULL);
+    }
 
     // Counting semaphore for CAN TX
     CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);

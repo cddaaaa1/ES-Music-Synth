@@ -14,6 +14,17 @@ void sampleISR()
     int volumeLevel = sysState.volume;
     Vout = Vout >> (8 - volumeLevel);
 
+    if (metronomeActive)
+    {
+        // Here, we simply add a constant amplitude. For a more natural click,
+        // you could apply a decaying envelope.
+        Vout += TICK_AMPLITUDE;
+        // Decrement the tick counter:
+        if (metronomeCounter > 0)
+            metronomeCounter--;
+        else
+            metronomeActive = false;
+    }
     // Output on e.g. OUTR_PIN = A3
     analogWrite(A3, Vout + 128); // 0..255 for DAC
 }
