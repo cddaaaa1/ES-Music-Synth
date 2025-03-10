@@ -2,6 +2,7 @@
 #include "globals.h" // For global variables, e.g., sysState, keys4, ...
 #include "pins.h"    // For pin definitions (RA0_PIN, etc.)
 #include "sampler.h"
+#include "autodetection.h"
 #include <bitset>
 
 #include <vector>
@@ -165,8 +166,9 @@ void scanKeysTask(void *pvParameters)
         int localVolume = sysState.volume;
         std::bitset<32> previousInput = sysState.inputs;
         uint8_t TX_Message[8] = {0};
+        bool west, east;
 
-        for (uint8_t row = 0; row < 4; row++)
+        for (uint8_t row = 0; row < 7; row++)
         {
             // Select row
             digitalWrite(REN_PIN, LOW);
@@ -195,55 +197,69 @@ void scanKeysTask(void *pvParameters)
                     if (previousInput[keyIndex] && !colInputs[col])
                     {
                         lastPressedKey = keyIndex;
-                        if (OCTAVE == 4)
+                        if (moduleOctave == 4)
                         {
                             keys4.set(keyIndex, true);
                             __atomic_store_n(&currentStepSize, stepSizes4[lastPressedKey], __ATOMIC_RELAXED);
                             if (samplerEnabled)
                             {
-                                sampler_recordEvent('P', OCTAVE, (uint8_t)keyIndex);
+                                sampler_recordEvent('P', moduleOctave, (uint8_t)keyIndex);
                             }
                         }
                         else
                         {
                             TX_Message[0] = 'P';
-                            TX_Message[1] = OCTAVE;
+                            TX_Message[1] = moduleOctave;
                             TX_Message[2] = lastPressedKey;
                             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
                         }
                         // if (samplerEnabled && previousInput[keyIndex])
                         // {
-                        //     sampler_recordEvent('P', OCTAVE, (uint8_t)keyIndex);
+                        //     sampler_recordEvent('P', moduleOctave, (uint8_t)keyIndex);
                         // }
                     }
                     if (!previousInput[keyIndex] && colInputs[col])
                     {
-                        if (OCTAVE == 4)
+                        if (moduleOctave == 4)
                         {
                             keys4.set(keyIndex, false);
                             __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
                             if (samplerEnabled)
                             {
-                                sampler_recordEvent('R', OCTAVE, (uint8_t)keyIndex);
+                                sampler_recordEvent('R', moduleOctave, (uint8_t)keyIndex);
                             }
                         }
                         else
                         {
                             TX_Message[0] = 'R';
-                            TX_Message[1] = OCTAVE;
+                            TX_Message[1] = moduleOctave;
                             TX_Message[2] = keyIndex;
                             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
                         }
                         // if (samplerEnabled)
                         // {
-                        //     sampler_recordEvent('R', OCTAVE, (uint8_t)keyIndex);
+                        //     sampler_recordEvent('R', moduleOctave, (uint8_t)keyIndex);
                         // }
                     }
                 }
             }
         }
         setStepSizes();
+        readHandshake(west, east);
 
+        // If either handshake input has changed, trigger auto-detection
+        if (west != prevWest || east != prevEast)
+        {
+            autoDetectHandshake(); // Update moduleOctave based on new readings
+            // Broadcast a CAN message to trigger re-detection in all modules
+            TX_Message[0] = 'H';          // Predefined handshake symbol
+            TX_Message[1] = moduleOctave; // New assigned octave
+            // Additional fields (like module ID) can be added here
+            xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
+            // digitalToggle(LED_BUILTIN);
+        }
+        prevWest = west;
+        prevEast = east;
         // **Knob 3 Decoding (A = localInputs[12], B = localInputs[13])**
         currentKnobState[0] = localInputs[12]; // A
         currentKnobState[1] = localInputs[13]; // B

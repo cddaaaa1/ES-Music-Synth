@@ -46,7 +46,7 @@ void displayUpdateTask(void *pvParameters)
         //   u8g2.print("None");
         // }
 
-        if (OCTAVE == 4)
+        if (moduleOctave == 4)
         {
             u8g2.drawStr(2, 10, "Notes:");
 

@@ -5,6 +5,7 @@
 #include "pins.h"
 #include "isr.h"
 #include "sampler.h"
+#include "autodetection.h"
 
 void setup()
 {
@@ -40,6 +41,11 @@ void setup()
   sampleTimer.attachInterrupt(sampleISR);
   sampleTimer.resume();
 
+  // handshake to determine moduleOctave
+  autoDetectHandshake();
+  Serial.print("Detected module octave: ");
+  Serial.println(moduleOctave);
+
   // Create RTOS tasks
   xTaskCreate(scanKeysTask, "scanKeys", 256, NULL, 1, &scanKeysHandle);
   xTaskCreate(displayUpdateTask, "displayUpdate", 256, NULL, 2, &displayTaskHandle);
@@ -64,7 +70,7 @@ void setup()
   xTaskCreate(decodeTask, "decodeTask", 128, NULL, 3, NULL);
   xTaskCreate(CAN_TX_Task, "CAN_TX_Task", 128, NULL, 4, NULL);
 
-  if (OCTAVE == 4)
+  if (moduleOctave == 4)
   {
     sampler_init();
     xTaskCreate(samplerTask, "samplerTask", 256, NULL, 5, NULL);

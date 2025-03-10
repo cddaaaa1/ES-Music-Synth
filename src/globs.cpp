@@ -1,6 +1,12 @@
 #include "globals.h"
 #include "pins.h"
-// Define the step-size tables here so they are visible to all files
+
+volatile int moduleOctave = 5;
+
+// auto detection handshake
+bool prevWest = true;
+bool prevEast = true;
+
 const uint32_t stepSizes4[12] = {
     51075946, 54113659, 57330980, 60739622,
     64351299, 68178701, 72232564, 76527532,

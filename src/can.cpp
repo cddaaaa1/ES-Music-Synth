@@ -1,7 +1,7 @@
 #include "globals.h"
 #include "can.h"
 #include "sampler.h"
-
+#include "autodetection.h"
 void CAN_TX_ISR(void)
 {
     // Give semaphore from ISR
@@ -36,9 +36,8 @@ void decodeTask(void *pvParameters)
         uint8_t noteIx = local_RX_Message[2];
 
         static uint32_t localCurrentStepSize = 0;
-
         // If we are the C4 node, handle remote C5 messages
-        if (OCTAVE == 4)
+        if (moduleOctave == 4)
         {
             if (msgType == 'P' && msgOct == 5)
             {
@@ -77,9 +76,13 @@ void decodeTask(void *pvParameters)
                     sampler_recordEvent('R', 6, (uint8_t)noteIx);
                 }
             }
-            // Actually update the step size
             //__atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
         }
+        // if (msgType == 'H')
+        // {
+        //     autoDetectHandshake();
+        // }
+        // Serial.println(msgType);
     }
 }
 
