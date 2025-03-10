@@ -9,7 +9,7 @@
 #include "Knob.h"
 
 // ---------------------- CONFIG ----------------------
-#define OCTAVE 6                  // or 4, depending on the board
+#define OCTAVE 4                  // or 4, depending on the board
 #define TICK_DURATION_SAMPLES 100 // Adjust duration (in number of audio samples)
 #define TICK_AMPLITUDE 50         // Adjust amplitude of the click
 // Audio sampling frequency
