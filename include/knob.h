@@ -8,7 +8,7 @@ class Knob
 {
 private:
     int rotationValue; // Current rotation value
-    int rotationVariable;
+    int lastUpdateValue = 0;
     int lowerLimit;           // Minimum limit for rotation
     int upperLimit;           // Maximum limit for rotation
     std::bitset<2> prevState; // Previous state of the quadrature inputs
@@ -68,28 +68,31 @@ public:
         {
             if (prevState == std::bitset<2>("00") && currentState == std::bitset<2>("01"))
             {
-                rotationVariable = +1;
+                rotationValue = constrain(rotationValue + 1, lowerLimit, upperLimit);
+                lastUpdateValue = 1;
             }
             else if (prevState == std::bitset<2>("11") && currentState == std::bitset<2>("10"))
             {
-                rotationVariable = +1;
+                rotationValue = constrain(rotationValue + 1, lowerLimit, upperLimit);
+                lastUpdateValue = 1;
             }
             else if (prevState == std::bitset<2>("10") && currentState == std::bitset<2>("11"))
             {
-                rotationVariable = -1;
+                rotationValue = constrain(rotationValue - 1, lowerLimit, upperLimit);
+                lastUpdateValue = -1;
             }
             else if (prevState == std::bitset<2>("01") && currentState == std::bitset<2>("00"))
             {
-                rotationVariable = -1;
+                rotationValue = constrain(rotationValue - 1, lowerLimit, upperLimit);
+                lastUpdateValue = -1;
             }
             else if ((prevState == std::bitset<2>("00") && currentState == std::bitset<2>("11")) ||
                      (prevState == std::bitset<2>("11") && currentState == std::bitset<2>("00")))
-                rotationVariable = 0;
-            else
-                rotationVariable = 0;
+            {
+                rotationValue = constrain(rotationValue + lastUpdateValue, lowerLimit, upperLimit);
+            }
         }
         prevState = currentState;
-        rotationValue = constrain(rotationValue + rotationVariable, lowerLimit, upperLimit);
     }
 
     bool getPress()
