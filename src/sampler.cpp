@@ -106,9 +106,41 @@ void sampler_recordEvent(char type, uint8_t octave, uint8_t noteIndex)
     xSemaphoreGive(samplerMutex);
 }
 
+void releaseAllNotes()
+{
+    // For octave 4:
+    for (size_t i = 0; i < keys4.size(); i++)
+    {
+        if (keys4.test(i))
+        {
+            NoteEvent event = {0, 'R', 4, static_cast<uint8_t>(i)};
+            simulateKeyEvent(event);
+        }
+    }
+    // For octave 5:
+    for (size_t i = 0; i < keys5.size(); i++)
+    {
+        if (keys5.test(i))
+        {
+            NoteEvent event = {0, 'R', 5, static_cast<uint8_t>(i)};
+            simulateKeyEvent(event);
+        }
+    }
+    // For octave 6:
+    for (size_t i = 0; i < keys6.size(); i++)
+    {
+        if (keys6.test(i))
+        {
+            NoteEvent event = {0, 'R', 6, static_cast<uint8_t>(i)};
+            simulateKeyEvent(event);
+        }
+    }
+}
+
 void resetSamplerState()
 {
     // Reset buffers and counters.
+    releaseAllNotes();
     xSemaphoreTake(samplerMutex, portMAX_DELAY);
     recordedCount = 0;
     playbackCount = 0;
