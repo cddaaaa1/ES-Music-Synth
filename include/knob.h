@@ -90,7 +90,6 @@ public:
         }
         prevState = currentState;
         rotationValue = constrain(rotationValue + rotationVariable, lowerLimit, upperLimit);
-        Serial.println(rotationValue);
     }
 
     bool getPress()
