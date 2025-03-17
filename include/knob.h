@@ -12,6 +12,15 @@ private:
     int lowerLimit;           // Minimum limit for rotation
     int upperLimit;           // Maximum limit for rotation
     std::bitset<2> prevState; // Previous state of the quadrature inputs
+    bool press;
+    bool prevPress;
+    enum class pressState
+    {
+        IDLE,
+        PRESSED,
+        RELEASED
+    };
+    pressState currentPressState = pressState::IDLE;
 
 public:
     // Constructor
@@ -22,6 +31,34 @@ public:
     {
         lowerLimit = minLimit;
         upperLimit = maxLimit;
+    }
+
+    void updatePress(std::bitset<1> currentPress)
+    {
+        switch (currentPressState)
+        {
+        case pressState::IDLE:
+            if (currentPress == std::bitset<1>("0"))
+            {                   // Button is pressed
+                press = !press; // Toggle press state
+                currentPressState = pressState::PRESSED;
+            }
+            break;
+
+        case pressState::PRESSED:
+            if (currentPress == std::bitset<1>("1"))
+            { // Button is released
+                currentPressState = pressState::RELEASED;
+            }
+            break;
+
+        case pressState::RELEASED:
+            if (currentPress == std::bitset<1>("0"))
+            { // Wait for full release before allowing another press
+                currentPressState = pressState::IDLE;
+            }
+            break;
+        }
     }
 
     // Update the rotation value based on quadrature encoder inputs
@@ -53,7 +90,12 @@ public:
         }
         prevState = currentState;
         rotationValue = constrain(rotationValue + rotationVariable, lowerLimit, upperLimit);
-        //Serial.println(rotationVariable);
+        Serial.println(rotationValue);
+    }
+
+    bool getPress()
+    {
+        return press;
     }
 
     // Get the current rotation value

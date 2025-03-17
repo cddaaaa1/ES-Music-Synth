@@ -41,6 +41,7 @@ std::bitset<12> keys6;
 
 std::bitset<2> prevKnobState = 0;
 Knob knob3(0, 8);
+Knob knob2(0, 8);
 
 QueueHandle_t msgInQ;
 QueueHandle_t msgOutQ;

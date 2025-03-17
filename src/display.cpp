@@ -93,7 +93,8 @@ void displayUpdateTask(void *pvParameters)
             }
         }
         u8g2.setCursor(2, 30);
-        u8g2.print(sysState.inputs.to_ulong(), HEX);
+        // u8g2.print(sysState.inputs.to_ulong(), HEX);
+        u8g2.print(knob2.getPress());
 
         u8g2.setCursor(66, 30);
         u8g2.print((char)RX_Message[0]);

@@ -266,6 +266,12 @@ void scanKeysTask(void *pvParameters)
 
         knob3.updateRotation(currentKnobState);
         localVolume = knob3.getRotationValue();
+        // knob 2 for deciding whether sampleing
+
+        std::bitset<1> currentPressKnob2;
+        currentPressKnob2[0] = localInputs[20];
+        knob2.updatePress(currentPressKnob2);
+        samplerEnabled = knob2.getPress();
 
         // Update global system state atomically and with mutex(copy the input state method)
         if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)

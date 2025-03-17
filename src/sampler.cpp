@@ -88,7 +88,11 @@ void sampler_init()
 void sampler_recordEvent(char type, uint8_t octave, uint8_t noteIndex)
 {
     if (!samplerEnabled)
+    {
+        // Option 1: Simply delay a short period to yield CPU
+        vTaskDelay(pdMS_TO_TICKS(50));
         return;
+    }
 
     // Calculate timestamp relative to the start of the current loop
     uint32_t ts = xTaskGetTickCount() - samplerLoopStartTime;
@@ -102,17 +106,42 @@ void sampler_recordEvent(char type, uint8_t octave, uint8_t noteIndex)
     xSemaphoreGive(samplerMutex);
 }
 
+void resetSamplerState()
+{
+    // Reset buffers and counters.
+    xSemaphoreTake(samplerMutex, portMAX_DELAY);
+    recordedCount = 0;
+    playbackCount = 0;
+    xSemaphoreGive(samplerMutex);
+
+    // Reset the loop start time if needed.
+    samplerLoopStartTime = 0;
+}
+
 //------------------------------------------------------------------------------
 // Function: samplerTask
 //------------------------------------------------------------------------------
 void samplerTask(void *pvParameters)
 {
+
     // Convert loop length to ticks
     const TickType_t loopTicks = pdMS_TO_TICKS(samplerLoopLength);
     TickType_t xLastWakeTime = xTaskGetTickCount();
-
+    bool prevSamplerEnabled = samplerEnabled;
     while (1)
     {
+        if (prevSamplerEnabled && !samplerEnabled)
+        {
+            // When the flag goes from 1 to 0, reset the state.
+            resetSamplerState();
+        }
+        prevSamplerEnabled = samplerEnabled;
+        if (!samplerEnabled)
+        {
+            // Delay to yield CPU.
+            vTaskDelay(pdMS_TO_TICKS(50));
+            continue;
+        }
         // Mark the beginning of the new loop cycle
         samplerLoopStartTime = xTaskGetTickCount();
 
@@ -173,6 +202,14 @@ void metronomeTask(void *pvParameters)
     const TickType_t beatDelay = pdMS_TO_TICKS(60000UL / BPM);
     while (1)
     {
+        if (!samplerEnabled)
+        {
+            // Option 1: Simply delay a short period to yield CPU
+            vTaskDelay(pdMS_TO_TICKS(50));
+            continue;
+        }
+        // if (!samplerEnabled)
+        //     return;
         // Toggle the LED for a visual metronome cue.
         digitalToggle(LED_BUILTIN);
         // Trigger the tick sound:

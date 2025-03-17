@@ -44,6 +44,7 @@ extern std::bitset<12> keys6;
 
 extern std::bitset<2> prevKnobState;
 extern Knob knob3;
+extern Knob knob2;
 
 extern QueueHandle_t msgInQ;
 extern QueueHandle_t msgOutQ;
@@ -68,6 +69,7 @@ extern volatile TickType_t samplerLoopStartTime;
 
 extern volatile bool metronomeActive;
 extern volatile uint32_t metronomeCounter;
+
 
 // The hardware timer for 22 kHz
 extern HardwareTimer sampleTimer;
