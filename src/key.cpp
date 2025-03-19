@@ -37,12 +37,16 @@ void setStepSizes()
     // First, add pressed keys from keys4 (C4).
     for (uint8_t i = 0; i < 12; i++)
     {
-        if (keys4.test(i))
+        if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
         {
-            if (finalNotes.size() < MAX_VOICES)
-                finalNotes.push_back({KEYBOARD_4, i});
-            else
-                break;
+            if (keys4.test(i))
+            {
+                if (finalNotes.size() < MAX_VOICES)
+                    finalNotes.push_back({KEYBOARD_4, i});
+                else
+                    break;
+            }
+            xSemaphoreGive(localKeyMutex);
         }
     }
     // Then, add pressed keys from keys5 (C5).
@@ -228,7 +232,7 @@ void scanKeysTask(void *pvParameters)
                         {
                             if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
                             {
-                                keys4.set(keyIndex, true);
+                                keys4.set(keyIndex, false);
                                 xSemaphoreGive(localKeyMutex);
                             }
                             __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);

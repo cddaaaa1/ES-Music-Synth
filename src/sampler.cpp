@@ -40,13 +40,17 @@ void simulateKeyEvent(const NoteEvent &event)
 {
     if (event.octave == 4)
     {
-        if (event.type == 'P')
+        if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
         {
-            keys4.set(event.noteIndex, true);
-        }
-        else if (event.type == 'R')
-        {
-            keys4.set(event.noteIndex, false);
+            if (event.type == 'P')
+            {
+                keys4.set(event.noteIndex, true);
+            }
+            else if (event.type == 'R')
+            {
+                keys4.set(event.noteIndex, false);
+            }
+            xSemaphoreGive(localKeyMutex);
         }
     }
     if (event.octave == 5)

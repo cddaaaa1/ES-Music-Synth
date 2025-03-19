@@ -58,13 +58,17 @@ void displayUpdateTask(void *pvParameters)
             // which bit = true? Show that note name with "C4" style
             for (int i = 0; i < 12; i++)
             {
-                if (keys4[i])
+                if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
                 {
-                    const char *localNoteNames[12] =
-                        {"C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4"};
-                    u8g2.setCursor(cursorx, 10);
-                    u8g2.print(localNoteNames[i]);
-                    cursorx += 15;
+                    if (keys4[i])
+                    {
+                        const char *localNoteNames[12] =
+                            {"C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4"};
+                        u8g2.setCursor(cursorx, 10);
+                        u8g2.print(localNoteNames[i]);
+                        cursorx += 15;
+                    }
+                    xSemaphoreGive(localKeyMutex);
                 }
             }
 
