@@ -159,10 +159,11 @@ void setStepSizes()
 
 void scanKeysTask(void *pvParameters)
 {
-    const TickType_t xFrequency = 50 / portTICK_PERIOD_MS;
+    const TickType_t xFrequency = 5 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime = xTaskGetTickCount();
     while (1)
     {
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
         std::bitset<32> localInputs;
         int lastPressedKey = -1;
         std::bitset<2> currentKnobState;

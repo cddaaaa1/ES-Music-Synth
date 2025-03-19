@@ -12,7 +12,7 @@ void displayUpdateTask(void *pvParameters)
     while (1)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-
+        digitalToggle(LED_BUILTIN);
         std::bitset<32> localInputs;
 
         // Lock mutex briefly to copy global state

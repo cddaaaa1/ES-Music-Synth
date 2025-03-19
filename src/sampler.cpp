@@ -55,28 +55,37 @@ void simulateKeyEvent(const NoteEvent &event)
     }
     if (event.octave == 5)
     {
-        if (event.type == 'P')
+        if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
         {
-            keys5.set(event.noteIndex, true);
-        }
-        else if (event.type == 'R')
-        {
-            keys5.set(event.noteIndex, false);
+
+            if (event.type == 'P')
+            {
+                keys5.set(event.noteIndex, true);
+            }
+            else if (event.type == 'R')
+            {
+                keys5.set(event.noteIndex, false);
+            }
+            xSemaphoreGive(externalKeyMutex);
         }
     }
     if (event.octave == 6)
     {
-        if (event.type == 'P')
+        if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
         {
-            keys6.set(event.noteIndex, true);
-        }
-        else if (event.type == 'R')
-        {
-            keys6.set(event.noteIndex, false);
+
+            if (event.type == 'P')
+            {
+                keys6.set(event.noteIndex, true);
+            }
+            else if (event.type == 'R')
+            {
+                keys6.set(event.noteIndex, false);
+            }
+            xSemaphoreGive(externalKeyMutex);
         }
     }
 }
-
 //------------------------------------------------------------------------------
 // Function: sampler_init
 //------------------------------------------------------------------------------
@@ -118,31 +127,43 @@ void sampler_recordEvent(char type, uint8_t octave, uint8_t noteIndex)
 void releaseAllNotes()
 {
     // For octave 4:
-    for (size_t i = 0; i < keys4.size(); i++)
+    if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
     {
-        if (keys4.test(i))
+        for (size_t i = 0; i < keys4.size(); i++)
         {
-            NoteEvent event = {0, 'R', 4, static_cast<uint8_t>(i)};
-            simulateKeyEvent(event);
+            if (keys4.test(i))
+            {
+                NoteEvent event = {0, 'R', 4, static_cast<uint8_t>(i)};
+                simulateKeyEvent(event);
+            }
         }
+        xSemaphoreGive(localKeyMutex);
     }
     // For octave 5:
-    for (size_t i = 0; i < keys5.size(); i++)
+    if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
     {
-        if (keys5.test(i))
+        for (size_t i = 0; i < keys5.size(); i++)
         {
-            NoteEvent event = {0, 'R', 5, static_cast<uint8_t>(i)};
-            simulateKeyEvent(event);
+            if (keys5.test(i))
+            {
+                NoteEvent event = {0, 'R', 5, static_cast<uint8_t>(i)};
+                simulateKeyEvent(event);
+            }
         }
+        xSemaphoreGive(externalKeyMutex);
     }
     // For octave 6:
-    for (size_t i = 0; i < keys6.size(); i++)
+    if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
     {
-        if (keys6.test(i))
+        for (size_t i = 0; i < keys6.size(); i++)
         {
-            NoteEvent event = {0, 'R', 6, static_cast<uint8_t>(i)};
-            simulateKeyEvent(event);
+            if (keys6.test(i))
+            {
+                NoteEvent event = {0, 'R', 6, static_cast<uint8_t>(i)};
+                simulateKeyEvent(event);
+            }
         }
+        xSemaphoreGive(externalKeyMutex);
     }
 }
 
@@ -177,7 +198,6 @@ void samplerTask(void *pvParameters)
             sampler_enabled = sysState.knob2.getPress();
             xSemaphoreGive(sysState.mutex);
         }
-        prevSamplerEnabled = sampler_enabled;
         if (prevSamplerEnabled && !sampler_enabled)
         {
             // When the flag goes from 1 to 0, reset the state.
@@ -246,9 +266,10 @@ void samplerTask(void *pvParameters)
 // This task toggles the built-in LED every beat as a simple metronome.
 void metronomeTask(void *pvParameters)
 {
-    // Calculate the delay between beats in ticks (60000 ms / BPM)
     const TickType_t beatDelay = pdMS_TO_TICKS(60000UL / BPM);
+    TickType_t xLastWakeTime = xTaskGetTickCount();
     bool sampler_enabled = 0;
+
     while (1)
     {
         if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
@@ -256,19 +277,14 @@ void metronomeTask(void *pvParameters)
             sampler_enabled = sysState.knob2.getPress();
             xSemaphoreGive(sysState.mutex);
         }
-        if (!sampler_enabled)
+
+        if (sampler_enabled)
         {
-            // Option 1: Simply delay a short period to yield CPU
-            vTaskDelay(pdMS_TO_TICKS(50));
-            continue;
+            metronomeActive = true;
+            metronomeCounter = TICK_DURATION_SAMPLES;
         }
-        // if (!samplerEnabled)
-        //     return;
-        // Toggle the LED for a visual metronome cue.
-        digitalToggle(LED_BUILTIN);
-        // Trigger the tick sound:
-        metronomeActive = true;
-        metronomeCounter = TICK_DURATION_SAMPLES;
-        vTaskDelay(beatDelay);
+
+        // Delay until the next precise interval
+        vTaskDelayUntil(&xLastWakeTime, beatDelay);
     }
 }

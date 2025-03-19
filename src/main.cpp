@@ -47,8 +47,8 @@ void setup()
   Serial.println(moduleOctave);
 
   // Create RTOS tasks
-  xTaskCreate(scanKeysTask, "scanKeys", 256, NULL, 1, &scanKeysHandle);
-  xTaskCreate(displayUpdateTask, "displayUpdate", 256, NULL, 2, &displayTaskHandle);
+  xTaskCreate(scanKeysTask, "scanKeys", 256, NULL, 6, &scanKeysHandle);
+  xTaskCreate(displayUpdateTask, "displayUpdate", 256, NULL, 7, &displayTaskHandle);
 
   // Mutex
   localKeyMutex = xSemaphoreCreateMutex();
@@ -69,14 +69,14 @@ void setup()
   CAN_Start();
 
   // Create decode & transmit tasks
-  xTaskCreate(decodeTask, "decodeTask", 128, NULL, 3, NULL);
+  xTaskCreate(decodeTask, "decodeTask", 128, NULL, 5, NULL);
   xTaskCreate(CAN_TX_Task, "CAN_TX_Task", 128, NULL, 4, NULL);
 
   if (moduleOctave == 4)
   {
     sampler_init();
-    xTaskCreate(samplerTask, "samplerTask", 256, NULL, 5, NULL);
-    xTaskCreate(metronomeTask, "metronomeTask", 128, NULL, 6, NULL);
+    xTaskCreate(samplerTask, "samplerTask", 256, NULL, 3, NULL);
+    xTaskCreate(metronomeTask, "metronomeTask", 128, NULL, 2, NULL);
   }
 
   // Counting semaphore for CAN TX
