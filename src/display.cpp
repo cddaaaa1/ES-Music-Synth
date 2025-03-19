@@ -16,11 +16,11 @@ void displayUpdateTask(void *pvParameters)
         std::bitset<32> localInputs;
 
         // Lock mutex briefly to copy global state
-        if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
-        {
-            memcpy(&localInputs, &sysState.inputs, sizeof(localInputs));
-            xSemaphoreGive(sysState.mutex);
-        }
+        // if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
+        // {
+        //     memcpy(&localInputs, &sysState.inputs, sizeof(localInputs));
+        //     xSemaphoreGive(sysState.mutex);
+        // }
 
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_ncenB08_tr);

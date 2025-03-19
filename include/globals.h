@@ -38,6 +38,8 @@ extern uint32_t phaseAcc4;
 extern uint32_t phaseAcc5;
 
 // Pressed-key tracking
+extern SemaphoreHandle_t localKeyMutex;
+extern SemaphoreHandle_t externalKeyMutex;
 extern std::bitset<12> keys4;
 extern std::bitset<12> keys5;
 extern std::bitset<12> keys6;
@@ -69,7 +71,6 @@ extern volatile TickType_t samplerLoopStartTime;
 
 extern volatile bool metronomeActive;
 extern volatile uint32_t metronomeCounter;
-
 
 // The hardware timer for 22 kHz
 extern HardwareTimer sampleTimer;

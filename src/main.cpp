@@ -50,7 +50,8 @@ void setup()
   xTaskCreate(scanKeysTask, "scanKeys", 256, NULL, 1, &scanKeysHandle);
   xTaskCreate(displayUpdateTask, "displayUpdate", 256, NULL, 2, &displayTaskHandle);
 
-  // Mutex for sysState
+  // Mutex
+  localKeyMutex = xSemaphoreCreateMutex();
   sysState.mutex = xSemaphoreCreateMutex();
   sysState.volume = 4;
   sampler_init();

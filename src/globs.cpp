@@ -35,6 +35,8 @@ uint32_t phaseAcc3 = 0;
 uint32_t phaseAcc4 = 0;
 uint32_t phaseAcc5 = 0;
 
+SemaphoreHandle_t localKeyMutex;
+SemaphoreHandle_t externalKeyMutex;
 std::bitset<12> keys4;
 std::bitset<12> keys5;
 std::bitset<12> keys6;

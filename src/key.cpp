@@ -199,7 +199,11 @@ void scanKeysTask(void *pvParameters)
                         lastPressedKey = keyIndex;
                         if (moduleOctave == 4)
                         {
-                            keys4.set(keyIndex, true);
+                            if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
+                            {
+                                keys4.set(keyIndex, true);
+                                xSemaphoreGive(localKeyMutex);
+                            }
                             __atomic_store_n(&currentStepSize, stepSizes4[lastPressedKey], __ATOMIC_RELAXED);
                             if (samplerEnabled)
                             {
@@ -222,7 +226,11 @@ void scanKeysTask(void *pvParameters)
                     {
                         if (moduleOctave == 4)
                         {
-                            keys4.set(keyIndex, false);
+                            if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
+                            {
+                                keys4.set(keyIndex, true);
+                                xSemaphoreGive(localKeyMutex);
+                            }
                             __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
                             if (samplerEnabled)
                             {
@@ -236,10 +244,6 @@ void scanKeysTask(void *pvParameters)
                             TX_Message[2] = keyIndex;
                             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
                         }
-                        // if (samplerEnabled)
-                        // {
-                        //     sampler_recordEvent('R', moduleOctave, (uint8_t)keyIndex);
-                        // }
                     }
                 }
             }
@@ -277,16 +281,9 @@ void scanKeysTask(void *pvParameters)
         if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
         {
             memcpy(&sysState.inputs, &localInputs, sizeof(sysState.inputs)); // Copy input state
-            sysState.rotationVariable = localRotationVariable;
-            sysState.volume = localVolume;
             xSemaphoreGive(sysState.mutex);
         }
-
-        // Update `currentStepSize` atomically
-        // if (RX_Message[0] == 'R')
-        // {
-        //   uint32_t localCurrentStepSize = (lastPressedKey >= 0 && lastPressedKey < 12) ? stepSizes[lastPressedKey] : 0;
-        //   __atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
-        // }
+        sysState.rotationVariable = localRotationVariable;
+        __atomic_store_n(&sysState.volume, localVolume, __ATOMIC_RELAXED);
     }
 }

@@ -25,11 +25,11 @@ void decodeTask(void *pvParameters)
         xQueueReceive(msgInQ, local_RX_Message, portMAX_DELAY);
 
         // Copy message into global if you want it for display
-        if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
-        {
-            memcpy(RX_Message, local_RX_Message, sizeof(RX_Message));
-            xSemaphoreGive(sysState.mutex);
-        }
+        // if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
+        // {
+        //     memcpy(RX_Message, local_RX_Message, sizeof(RX_Message));
+        //     xSemaphoreGive(sysState.mutex);
+        // }
 
         char msgType = local_RX_Message[0];   // 'P'/'R'
         uint8_t msgOct = local_RX_Message[1]; // 4 or 5
