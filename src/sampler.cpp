@@ -139,8 +139,9 @@ void releaseAllNotes()
         {
             if (keys4.test(i))
             {
-                NoteEvent event = {0, 'R', 4, static_cast<uint8_t>(i)};
-                simulateKeyEvent(event);
+                // NoteEvent event = {0, 'R', 4, static_cast<uint8_t>(i)};
+                // simulateKeyEvent(event);
+                keys4.set(i, false);
             }
         }
         xSemaphoreGive(localKeyMutex);
@@ -152,8 +153,9 @@ void releaseAllNotes()
         {
             if (keys5.test(i))
             {
-                NoteEvent event = {0, 'R', 5, static_cast<uint8_t>(i)};
-                simulateKeyEvent(event);
+                // NoteEvent event = {0, 'R', 5, static_cast<uint8_t>(i)};
+                // simulateKeyEvent(event);
+                keys5.set(i, false);
             }
         }
         xSemaphoreGive(externalKeyMutex);
@@ -165,8 +167,9 @@ void releaseAllNotes()
         {
             if (keys6.test(i))
             {
-                NoteEvent event = {0, 'R', 6, static_cast<uint8_t>(i)};
-                simulateKeyEvent(event);
+                // NoteEvent event = {0, 'R', 6, static_cast<uint8_t>(i)};
+                // simulateKeyEvent(event);
+                keys6.set(i, false);
             }
         }
         xSemaphoreGive(externalKeyMutex);
@@ -213,7 +216,7 @@ void samplerTask(void *pvParameters)
         if (!sampler_enabled)
         {
             // Delay to yield CPU.
-            vTaskDelay(pdMS_TO_TICKS(50));
+            vTaskDelay(pdMS_TO_TICKS(100));
             continue;
         }
         // Mark the beginning of the new loop cycle

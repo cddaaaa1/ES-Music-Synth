@@ -7,14 +7,14 @@
 #include "sampler.h"
 #include "autodetection.h"
 
-#define TestMode
-#define SCAN_KEYS
-#define STATSTASK
-// #define DECODE
-// #define METRONOME
-// #define SAMPLER
-// #define CAN_TX
-// #define SAMPLE_ISR
+// #define TestMode
+// #define SCAN_KEYS
+// #define STATSTASK
+//  #define DECODE
+//  #define METRONOME
+//  #define SAMPLER
+//  #define CAN_TX
+//  #define SAMPLE_ISR
 
 void printTaskStats()
 {
@@ -151,7 +151,7 @@ void setup()
   {
     sampler_init();
     xTaskCreate(samplerTask, "samplerTask", 256, NULL, 3, NULL);
-    xTaskCreate(metronomeTask, "metronomeTask", 128, NULL, 2, NULL);
+    // xTaskCreate(metronomeTask, "metronomeTask", 128, NULL, 2, NULL);
   }
 
   // Counting semaphore for CAN TX
