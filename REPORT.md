@@ -20,13 +20,13 @@ Our project realised the basic functions of keyboard,
    A keyboard from Octave 4 to 6
 2. **Automatic octave detection**
    Synth modules use handshaking to automatically set up their roles and octaves
-2. **Polyphony**
+3. **Polyphony**
    Play multiple notes simultaneously
    [Download the video](poly.mp4)
-5. **Volume control**
+4. **Volume control**
    Adjust volume using knob3
    [Download the video](volume.mp4)
-6. **Music sampler**
+5. **Music sampler**
    Click knob2 to start sampler mode.
    [Download the video](sampler.mp4)
 
