@@ -2,5 +2,5 @@
 #define KEY_H
 
 void scanKeysTask(void *pvParameters);
-
+void scanKeysFunction(void *pvParameters);
 #endif // TASKS_KEY_H

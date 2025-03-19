@@ -4,6 +4,12 @@
 #include <string.h>
 #include "globals.h"
 
+uint32_t samplerIterations = 0;
+TickType_t samplerStartTime = 0;
+
+uint32_t metronomeIterations = 0;
+TickType_t metronomeStartTime = 0;
+
 //------------------------------------------------------------------------------
 // Metronome & Sampler Timing Constants
 //------------------------------------------------------------------------------
@@ -286,5 +292,41 @@ void metronomeTask(void *pvParameters)
 
         // Delay until the next precise interval
         vTaskDelayUntil(&xLastWakeTime, beatDelay);
+    }
+}
+
+void metronomeFunction(void *pvParameters)
+{
+    // 设定最大 BPM 值，以减少 vTaskDelay()，增加 CPU 占用
+    const TickType_t beatDelay = pdMS_TO_TICKS(60000UL / 300); // 300 BPM
+
+    if (metronomeIterations == 0)
+    {
+        metronomeStartTime = xTaskGetTickCount();
+    }
+
+    while (1)
+    {
+        metronomeIterations++;
+
+        // **最坏情况: 确保 samplerEnabled 始终为 true**
+        samplerEnabled = true;
+
+        // **高频 I/O 操作**
+        for (int j = 0; j < 10; j++)
+        {
+            digitalToggle(LED_BUILTIN);
+        }
+
+        // **最坏情况: metronomeCounter 执行最大计算**
+        metronomeActive = true;
+        metronomeCounter = UINT32_MAX; // 设为最大值，模拟计算最重路径
+
+        // **确保任务持续执行，而不是立即进入等待**
+        TickType_t startTick = xTaskGetTickCount();
+        while (xTaskGetTickCount() - startTick < beatDelay)
+        {
+            vTaskDelay(pdMS_TO_TICKS(1)); // 让出 CPU，避免独占
+        }
     }
 }

@@ -34,5 +34,5 @@ void samplerTask(void *pvParameters);
 // FreeRTOS task that functions as a metronome by toggling the built-in LED every beat.
 // Create this task using xTaskCreate in your setup().
 void metronomeTask(void *pvParameters);
-
+void metronomeFunction(void *pvParameters);
 #endif // SAMPLER_H

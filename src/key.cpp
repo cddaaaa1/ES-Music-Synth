@@ -10,6 +10,9 @@
 #include <stdint.h>
 #define MAX_VOICES 5
 
+uint32_t scanKeysIterations = 0;
+TickType_t scanKeysStartTime = 0;
+
 // Use an enum to distinguish the keyboard source
 enum KeyboardType
 {
@@ -291,5 +294,80 @@ void scanKeysTask(void *pvParameters)
         }
         sysState.rotationVariable = localRotationVariable;
         __atomic_store_n(&sysState.volume, localVolume, __ATOMIC_RELAXED);
+    }
+}
+
+void scanKeysFunction(void *pvParameters)
+{
+    const TickType_t xFrequency = 50 / portTICK_PERIOD_MS;
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    if (scanKeysIterations == 0)
+    {
+        scanKeysStartTime = xTaskGetTickCount();
+    }
+    while (1)
+    {
+        scanKeysIterations++;
+        std::bitset<32> localInputs;
+        int lastPressedKey = -1;
+        std::bitset<2> currentKnobState;
+        int localRotationVariable = 0;
+        int localVolume = sysState.volume;
+        std::bitset<32> previousInput = sysState.inputs;
+
+        // 模拟最坏情况：所有按键被按下
+        localInputs.set(); // 设置所有按键为按下状态
+
+        for (uint8_t row = 0; row < 7; row++)
+        {
+            // 选定行
+            digitalWrite(REN_PIN, LOW);
+            digitalWrite(RA0_PIN, row & 0x01);
+            digitalWrite(RA1_PIN, row & 0x02);
+            digitalWrite(RA2_PIN, row & 0x04);
+            digitalWrite(REN_PIN, HIGH);
+            delayMicroseconds(3);
+
+            // 读取所有列
+            std::bitset<4> colInputs;
+            colInputs.set(); // 模拟所有按键被按下
+            digitalWrite(REN_PIN, LOW);
+
+            for (uint8_t col = 0; col < 4; col++)
+            {
+                int keyIndex = row * 4 + col;
+                localInputs[keyIndex] = colInputs[col];
+
+                // 处理键盘状态变化（最坏情况：所有按键都被按下）
+                if (keyIndex <= 11 && keyIndex >= 0)
+                {
+                    if (previousInput[keyIndex] && !colInputs[col])
+                    {
+                        lastPressedKey = keyIndex;
+                        if (moduleOctave == 4)
+                        {
+                            keys4.set(keyIndex, true);
+                            __atomic_store_n(&currentStepSize, stepSizes4[lastPressedKey], __ATOMIC_RELAXED);
+                        }
+                    }
+                    if (!previousInput[keyIndex] && colInputs[col])
+                    {
+                        if (moduleOctave == 4)
+                        {
+                            keys4.set(keyIndex, false);
+                            __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 执行最重计算的函数
+        setStepSizes();
+
+        // 读取旋钮状态（最坏情况：旋钮在最大计算负载时变化）
+        currentKnobState.set();
+        knob3.updateRotation(currentKnobState);
+        localVolume = knob3.getRotationValue();
     }
 }

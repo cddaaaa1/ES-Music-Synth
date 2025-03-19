@@ -44,9 +44,9 @@ extern std::bitset<12> keys4;
 extern std::bitset<12> keys5;
 extern std::bitset<12> keys6;
 
-// extern std::bitset<2> prevKnobState;
-// extern Knob knob3;
-// extern Knob knob2;
+extern std::bitset<2> prevKnobState;
+extern Knob knob3;
+extern Knob knob2;
 
 extern QueueHandle_t msgInQ;
 extern QueueHandle_t msgOutQ;
@@ -68,6 +68,7 @@ struct SystemState
 extern SystemState sysState;
 
 // sampler
+extern volatile bool samplerEnabled;
 extern volatile TickType_t samplerLoopStartTime;
 
 extern volatile bool metronomeActive;
@@ -80,6 +81,30 @@ extern U8G2_SSD1305_128X32_ADAFRUIT_F_HW_I2C u8g2;
 // inside globals.h
 extern TaskHandle_t scanKeysHandle;
 extern TaskHandle_t displayTaskHandle;
+
+// scanKeys Iterations
+extern uint32_t scanKeysIterations;
+extern TickType_t scanKeysStartTime;
+
+// display iterations
+extern uint32_t displayIterations;
+extern TickType_t displayStartTime;
+
+// metronome iterations
+extern uint32_t metronomeIterations;
+extern TickType_t metronomeStartTime;
+
+// sampler iterations
+extern uint32_t samplerIterations;
+extern TickType_t samplerStartTime;
+
+// decoder iterations
+extern uint32_t decodeIterations;
+extern TickType_t decodeStartTime;
+
+// CAN_TX iterations
+extern uint32_t CAN_TX_Iterations;
+extern TickType_t CAN_TX_StartTime;
 
 // --------------- Function Prototypes ---------------
 void setOutMuxBit(const uint8_t bitIdx, const bool value);

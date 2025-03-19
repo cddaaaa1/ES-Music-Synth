@@ -3,6 +3,6 @@
 
 // Declare the function the hardware timer will call:
 void sampleISR(void);
-
+void sampleISRTest();
 
 #endif // ISR_H

@@ -3,6 +3,6 @@
 
 
 void displayUpdateTask(void *pvParameters);
-
+void displayUpdateFunction(void *pvParameters);
 
 #endif // TASKS_DISPLAY_H
