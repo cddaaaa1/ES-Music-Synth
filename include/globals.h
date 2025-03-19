@@ -44,9 +44,9 @@ extern std::bitset<12> keys4;
 extern std::bitset<12> keys5;
 extern std::bitset<12> keys6;
 
-extern std::bitset<2> prevKnobState;
-extern Knob knob3;
-extern Knob knob2;
+// extern std::bitset<2> prevKnobState;
+// extern Knob knob3;
+// extern Knob knob2;
 
 extern QueueHandle_t msgInQ;
 extern QueueHandle_t msgOutQ;
@@ -61,12 +61,13 @@ struct SystemState
     SemaphoreHandle_t mutex;
     int rotationVariable;
     int volume;
+    Knob knob3{0, 8};
+    Knob knob2{0, 8};
 };
 
 extern SystemState sysState;
 
 // sampler
-extern volatile bool samplerEnabled;
 extern volatile TickType_t samplerLoopStartTime;
 
 extern volatile bool metronomeActive;

@@ -171,7 +171,7 @@ void scanKeysTask(void *pvParameters)
         std::bitset<32> previousInput = sysState.inputs;
         uint8_t TX_Message[8] = {0};
         bool west, east;
-
+        bool sampler_enabled = sysState.knob2.getPress();
         for (uint8_t row = 0; row < 7; row++)
         {
             // Select row
@@ -209,7 +209,7 @@ void scanKeysTask(void *pvParameters)
                                 xSemaphoreGive(localKeyMutex);
                             }
                             __atomic_store_n(&currentStepSize, stepSizes4[lastPressedKey], __ATOMIC_RELAXED);
-                            if (samplerEnabled)
+                            if (sampler_enabled)
                             {
                                 sampler_recordEvent('P', moduleOctave, (uint8_t)keyIndex);
                             }
@@ -236,7 +236,7 @@ void scanKeysTask(void *pvParameters)
                                 xSemaphoreGive(localKeyMutex);
                             }
                             __atomic_store_n(&currentStepSize, 0, __ATOMIC_RELAXED);
-                            if (samplerEnabled)
+                            if (sampler_enabled)
                             {
                                 sampler_recordEvent('R', moduleOctave, (uint8_t)keyIndex);
                             }
@@ -268,23 +268,24 @@ void scanKeysTask(void *pvParameters)
         }
         prevWest = west;
         prevEast = east;
+
         // **Knob 3 Decoding (A = localInputs[12], B = localInputs[13])**
         currentKnobState[0] = localInputs[12]; // A
         currentKnobState[1] = localInputs[13]; // B
+        sysState.knob3.updateRotation(currentKnobState);
+        localVolume = sysState.knob3.getRotationValue();
 
-        knob3.updateRotation(currentKnobState);
-        localVolume = knob3.getRotationValue();
         // knob 2 for deciding whether sampleing
-
         std::bitset<1> currentPressKnob2;
         currentPressKnob2[0] = localInputs[20];
-        knob2.updatePress(currentPressKnob2);
-        samplerEnabled = knob2.getPress();
 
         // Update global system state atomically and with mutex(copy the input state method)
         if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
         {
             memcpy(&sysState.inputs, &localInputs, sizeof(sysState.inputs)); // Copy input state
+            sysState.knob2.updatePress(currentPressKnob2);
+            sysState.knob3.updateRotation(currentKnobState);
+            localVolume = sysState.knob3.getRotationValue();
             xSemaphoreGive(sysState.mutex);
         }
         sysState.rotationVariable = localRotationVariable;

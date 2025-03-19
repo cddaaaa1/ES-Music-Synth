@@ -53,7 +53,6 @@ uint8_t RX_Message[8] = {0};
 
 SystemState sysState;
 
-volatile bool samplerEnabled = true;
 volatile TickType_t samplerLoopStartTime = 0;
 
 volatile bool metronomeActive = false;

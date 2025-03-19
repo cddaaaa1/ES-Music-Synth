@@ -56,9 +56,9 @@ void displayUpdateTask(void *pvParameters)
 
             // For local keys:
             // which bit = true? Show that note name with "C4" style
-            for (int i = 0; i < 12; i++)
+            if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
             {
-                if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
+                for (int i = 0; i < 12; i++)
                 {
                     if (keys4[i])
                     {
@@ -68,32 +68,35 @@ void displayUpdateTask(void *pvParameters)
                         u8g2.print(localNoteNames[i]);
                         cursorx += 15;
                     }
-                    xSemaphoreGive(localKeyMutex);
                 }
+                xSemaphoreGive(localKeyMutex);
             }
-
-            for (int i = 0; i < 12; i++)
+            if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
             {
-                if (keys5[i])
+                for (int i = 0; i < 12; i++)
                 {
-                    // remote note names for C5
-                    const char *remoteNoteNames[12] =
-                        {"C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5"};
-                    u8g2.setCursor(cursorx, 10);
-                    u8g2.print(remoteNoteNames[i]);
-                    cursorx += 15;
+                    if (keys5[i])
+                    {
+                        // remote note names for C5
+                        const char *remoteNoteNames[12] =
+                            {"C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5"};
+                        u8g2.setCursor(cursorx, 10);
+                        u8g2.print(remoteNoteNames[i]);
+                        cursorx += 15;
+                    }
                 }
-            }
-            for (int i = 0; i < 12; i++)
-            {
-                if (keys6[i])
+                for (int i = 0; i < 12; i++)
                 {
-                    const char *sixthNoteNames[12] =
-                        {"C6", "C#6", "D6", "D#6", "E6", "F6", "F#6", "G6", "G#6", "A6", "A#6", "B6"};
-                    u8g2.setCursor(cursorx, 10);
-                    u8g2.print(sixthNoteNames[i]);
-                    cursorx += 15;
+                    if (keys6[i])
+                    {
+                        const char *sixthNoteNames[12] =
+                            {"C6", "C#6", "D6", "D#6", "E6", "F6", "F#6", "G6", "G#6", "A6", "A#6", "B6"};
+                        u8g2.setCursor(cursorx, 10);
+                        u8g2.print(sixthNoteNames[i]);
+                        cursorx += 15;
+                    }
                 }
+                xSemaphoreGive(externalKeyMutex);
             }
             u8g2.setCursor(2, 20);
             u8g2.print("Volume:");
@@ -101,7 +104,7 @@ void displayUpdateTask(void *pvParameters)
             u8g2.print(sysState.volume);
 
             u8g2.setCursor(2, 30);
-            if (knob2.getPress())
+            if (sysState.knob2.getPress())
             {
                 u8g2.print("Sampler Enabled");
             }

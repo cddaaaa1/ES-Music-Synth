@@ -83,7 +83,6 @@ void simulateKeyEvent(const NoteEvent &event)
 void sampler_init()
 {
     samplerMutex = xSemaphoreCreateMutex();
-    samplerEnabled = true;
 }
 
 //------------------------------------------------------------------------------
@@ -91,7 +90,13 @@ void sampler_init()
 //------------------------------------------------------------------------------
 void sampler_recordEvent(char type, uint8_t octave, uint8_t noteIndex)
 {
-    if (!samplerEnabled)
+    bool sampler_enabled;
+    if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
+    {
+        sampler_enabled = sysState.knob2.getPress();
+        xSemaphoreGive(sysState.mutex);
+    }
+    if (!sampler_enabled)
     {
         // Option 1: Simply delay a short period to yield CPU
         vTaskDelay(pdMS_TO_TICKS(50));
@@ -163,16 +168,23 @@ void samplerTask(void *pvParameters)
     // Convert loop length to ticks
     const TickType_t loopTicks = pdMS_TO_TICKS(samplerLoopLength);
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    bool prevSamplerEnabled = samplerEnabled;
+    bool sampler_enabled = 0;
+    bool prevSamplerEnabled = 0;
     while (1)
     {
-        if (prevSamplerEnabled && !samplerEnabled)
+        if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
+        {
+            sampler_enabled = sysState.knob2.getPress();
+            xSemaphoreGive(sysState.mutex);
+        }
+        prevSamplerEnabled = sampler_enabled;
+        if (prevSamplerEnabled && !sampler_enabled)
         {
             // When the flag goes from 1 to 0, reset the state.
             resetSamplerState();
         }
-        prevSamplerEnabled = samplerEnabled;
-        if (!samplerEnabled)
+        prevSamplerEnabled = sampler_enabled;
+        if (!sampler_enabled)
         {
             // Delay to yield CPU.
             vTaskDelay(pdMS_TO_TICKS(50));
@@ -236,9 +248,15 @@ void metronomeTask(void *pvParameters)
 {
     // Calculate the delay between beats in ticks (60000 ms / BPM)
     const TickType_t beatDelay = pdMS_TO_TICKS(60000UL / BPM);
+    bool sampler_enabled = 0;
     while (1)
     {
-        if (!samplerEnabled)
+        if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
+        {
+            sampler_enabled = sysState.knob2.getPress();
+            xSemaphoreGive(sysState.mutex);
+        }
+        if (!sampler_enabled)
         {
             // Option 1: Simply delay a short period to yield CPU
             vTaskDelay(pdMS_TO_TICKS(50));

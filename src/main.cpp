@@ -52,6 +52,7 @@ void setup()
 
   // Mutex
   localKeyMutex = xSemaphoreCreateMutex();
+  externalKeyMutex = xSemaphoreCreateMutex();
   sysState.mutex = xSemaphoreCreateMutex();
   sysState.volume = 4;
   sampler_init();

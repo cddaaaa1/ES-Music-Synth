@@ -37,13 +37,23 @@ void decodeTask(void *pvParameters)
 
         static uint32_t localCurrentStepSize = 0;
         // If we are the C4 node, handle remote C5 messages
+        bool sampler_enabled;
+        if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
+        {
+            sampler_enabled = sysState.knob2.getPress();
+            xSemaphoreGive(sysState.mutex);
+        }
         if (moduleOctave == 4)
         {
             if (msgType == 'P' && msgOct == 5)
             {
                 localCurrentStepSize = stepSizes5[noteIx];
-                keys5.set(noteIx, true);
-                if (samplerEnabled)
+                if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
+                {
+                    keys5.set(noteIx, true);
+                    xSemaphoreGive(externalKeyMutex);
+                }
+                if (sampler_enabled)
                 {
                     sampler_recordEvent('P', 5, (uint8_t)noteIx);
                 }
@@ -51,8 +61,12 @@ void decodeTask(void *pvParameters)
             else if (msgType == 'R' && msgOct == 5)
             {
                 localCurrentStepSize = 0;
-                keys5.set(noteIx, false);
-                if (samplerEnabled)
+                if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
+                {
+                    keys5.set(noteIx, false);
+                    xSemaphoreGive(externalKeyMutex);
+                }
+                if (sampler_enabled)
                 {
                     sampler_recordEvent('R', 5, (uint8_t)noteIx);
                 }
@@ -61,8 +75,13 @@ void decodeTask(void *pvParameters)
             if (msgType == 'P' && msgOct == 6)
             {
                 localCurrentStepSize = stepSizes6[noteIx];
-                keys6.set(noteIx, true);
-                if (samplerEnabled)
+
+                if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
+                {
+                    keys6.set(noteIx, true);
+                    xSemaphoreGive(externalKeyMutex);
+                }
+                if (sampler_enabled)
                 {
                     sampler_recordEvent('P', 6, (uint8_t)noteIx);
                 }
@@ -70,19 +89,18 @@ void decodeTask(void *pvParameters)
             else if (msgType == 'R' && msgOct == 6)
             {
                 localCurrentStepSize = 0;
-                keys6.set(noteIx, false);
-                if (samplerEnabled)
+                if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
+                {
+                    keys6.set(noteIx, false);
+                    xSemaphoreGive(externalKeyMutex);
+                }
+                if (sampler_enabled)
                 {
                     sampler_recordEvent('R', 6, (uint8_t)noteIx);
                 }
             }
             //__atomic_store_n(&currentStepSize, localCurrentStepSize, __ATOMIC_RELAXED);
         }
-        // if (msgType == 'H')
-        // {
-        //     autoDetectHandshake();
-        // }
-        // Serial.println(msgType);
     }
 }
 
