@@ -6,7 +6,7 @@ Our project works as a music sampler in form of 3 octave keyborad, support maxim
 
 ## Table of Contents
 
-- [1. Functionality video](#1-functionality-video)
+- [1. Functionalites and video demonstrations](#1-functionality-and-video-demonstrations)
 - [2. Tasks descriptions](#2-task-descriptions)
 - [3. ISR descriptions](#3-isr-descriptions)
 - [4. Function descriptions](#4-function-descriptions)
