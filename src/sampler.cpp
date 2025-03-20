@@ -221,7 +221,7 @@ void samplerTask(void *pvParameters)
     }
 }
 
-// simple metronome.(not in use)
+// simple metronome
 void metronomeTask(void *pvParameters)
 {
     const TickType_t beatDelay = pdMS_TO_TICKS(60000UL / BPM);
@@ -246,7 +246,7 @@ void metronomeTask(void *pvParameters)
     }
 }
 
-void metronomeFunction(void *pvParameters)
+void metronomeFunction(void *pvParameters)//WCET test function
 {
     const TickType_t beatDelay = pdMS_TO_TICKS(60000UL / 300);
 
@@ -273,6 +273,66 @@ void metronomeFunction(void *pvParameters)
         while (xTaskGetTickCount() - startTick < beatDelay)
         {
             vTaskDelay(pdMS_TO_TICKS(1));
+        }
+    }
+}
+
+
+void samplerFunction(void *pvParameters)// WCET test function
+{
+    const TickType_t loopTicks = pdMS_TO_TICKS(1);
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    bool prevSamplerEnabled = true;
+
+    if (samplerIterations == 0)
+    {
+        samplerStartTime = xTaskGetTickCount();
+    }
+
+    while (1)
+    {
+        samplerIterations++;
+
+        samplerEnabled = true;
+        playbackCount = MAX_EVENTS;
+        for (int i = 0; i < MAX_EVENTS; i++)
+        {
+            playbackBuffer[i].timestamp = i * 10;
+        }
+
+        uint32_t lastTimestamp = 0;
+        for (int i = 0; i < playbackCount; i++)
+        {
+            uint32_t delayTime = playbackBuffer[i].timestamp - lastTimestamp;
+            vTaskDelay(pdMS_TO_TICKS(delayTime));
+            lastTimestamp = playbackBuffer[i].timestamp;
+            simulateKeyEvent(playbackBuffer[i]);
+        }
+
+        vTaskDelayUntil(&xLastWakeTime, loopTicks);
+
+        recordedCount = MAX_EVENTS;
+        for (int i = 0; i < MAX_EVENTS; i++)
+        {
+            recordingBuffer[i].timestamp = MAX_EVENTS - i;
+        }
+
+        if (playbackCount + recordedCount <= MAX_EVENTS)
+        {
+            memcpy(&playbackBuffer[playbackCount], recordingBuffer, recordedCount * sizeof(NoteEvent));
+            playbackCount += recordedCount;
+        }
+
+        for (int i = 1; i < playbackCount; i++)
+        {
+            NoteEvent key = playbackBuffer[i];
+            int j = i - 1;
+            while (j >= 0 && playbackBuffer[j].timestamp > key.timestamp)
+            {
+                playbackBuffer[j + 1] = playbackBuffer[j];
+                j--;
+            }
+            playbackBuffer[j + 1] = key;
         }
     }
 }

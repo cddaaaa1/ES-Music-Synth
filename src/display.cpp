@@ -94,7 +94,7 @@ void displayUpdateTask(void *pvParameters)
     }
 }
 
-void displayUpdateFunction(void *pvParameters)
+void displayUpdateFunction(void *pvParameters) //WCET test function
 {
     const TickType_t xFrequency = 100 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime = xTaskGetTickCount();

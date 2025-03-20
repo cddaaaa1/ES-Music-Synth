@@ -31,7 +31,7 @@ void sampleISR()
     analogWrite(A3, Vout + 128);
 }
 
-void sampleISRTest()
+void sampleISRTest()//WCET test function
 {
     uint32_t startTime = micros();
 

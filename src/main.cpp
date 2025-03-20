@@ -9,15 +9,16 @@
 
 // uncomment below to enter testmode
 
+// #define WORKMODECPU
 // #define TestMode
 // #define STATSTASK
-// #define SCAN_KEYS
+//  #define SCAN_KEYS
 //  #define DISPLAYTEST
-//   #define DECODE
-//   #define SAMPLER
-//   #define CAN_TX
-//   #define CAN_RX_TX
-//   #define SAMPLE_ISR
+//  #define DECODE
+// #define SAMPLER
+// #define CAN_TX
+// #define CAN_RX_TX
+// #define SAMPLE_ISR
 
 void printTaskStats()
 {
@@ -154,6 +155,9 @@ void setup()
   // Counting semaphore for CAN TX
   CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
 
+  #ifdef WORKMODECPU
+  xTaskCreate(statsTask, "StatsTask", 256, NULL, 1, NULL);
+  #endif
   vTaskStartScheduler();
 
 #else

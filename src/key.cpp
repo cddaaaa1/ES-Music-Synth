@@ -290,7 +290,7 @@ void scanKeysTask(void *pvParameters)
     }
 }
 
-void setStepSizesFunction()
+void setStepSizesFunction()//WCET test function
 {
 
     uint32_t localStepSize1 = 0, localStepSize2 = 0, localStepSize3 = 0, localStepSize4 = 0, localStepSize5 = 0;
@@ -413,7 +413,7 @@ void setStepSizesFunction()
     __atomic_store_n(&currentStepSize5, localStepSize5, __ATOMIC_RELAXED);
 }
 
-void scanKeysFunction(void *pvParameters)
+void scanKeysFunction(void *pvParameters)//WCET test function
 {
     const TickType_t xFrequency = 50 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime = xTaskGetTickCount();

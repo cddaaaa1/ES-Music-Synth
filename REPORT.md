@@ -10,7 +10,7 @@ Our project works as a music sampler in form of 3 octave keyborad, support maxim
 - [2. Tasks descriptions](#2-task-descriptions)
 - [3. ISR descriptions](#3-isr-descriptions)
 - [4. Function descriptions](#4-function-descriptions)
-- [5. Execution timing analysis](#5-execution-timing-analysis)
+- [5. Execution timing and CPU usage analysis](#5-execution-timing-analysis)
 - [6. Shared data structure and safely access strategy](#6-shared-data-structure-with-safely-access-strategy)
 - [7. Analysis of deadlock](#7-analysis-of-deadlock)
 
@@ -75,7 +75,8 @@ For detailed descriptions, refer to [function.md](function.md).
    | CN_TX_Task | 1% | 6870 µs | [CN_TX_Function](wcet.md#can_tx_function)|
    | samplerTask | 5% | 1134890 µs | [samplerFunction](wcet.md#samplerfunction)|
    | metronemoTask | 1% | 199250 µs | [metronemoFunction](wcet.md#metronomefunction)|
-   | sample_ISR | | 15 µs | [sampleISRTest](wcet.md#sampleisrtest)|
+   | sample_ISR | - | 15 µs | [sampleISRTest](wcet.md#sampleisrtest)|
+   | CAN_RX_ISR | - | 9 µs |
 
 **Testing Methodology**
 
@@ -106,6 +107,36 @@ Example:
 ## 6. Shared data structure with safely access strategy
 
 Our design use Mutex, atomic instruction and thread safe queue to ensure safe data access and synchonrisation.
+
+## 7. Work mode total CPU usagage
+
+- To test cpu usage under normal working mode, do not `#define TESTMODE`， instead，`#define WORKMODECPU `.
+
+Example:
+
+```cpp
+#define WORKMODECPU
+// #define TestMode
+// #define STATSTASK
+// #define SCAN_KEYS
+// #define DISPLAYTEST
+//  #define DECODE
+// #define SAMPLER
+// #define CAN_TX
+// #define CAN_RX_TX
+// #define SAMPLE_ISR
+```
+
+| Task name         | CPU usage (isolated) |
+| ----------------- | -------------------- |
+| StateTask         | 2%                   |
+| scanKeysTask      | 6%                   |
+| displayUpdateTask | 20%                  |
+| decodeTask        | <1%                  |
+| CN_TX_Task        | <1%                  |
+| samplerTask       | <1%                  |
+| metronomeTask     | <1%                  |
+| Total Usage       | 30%                  |
 
 ### Atomic intruction
 

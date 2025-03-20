@@ -23,7 +23,7 @@ void CAN_RX_ISR(void)
     xQueueSendFromISR(msgInQ, RX_Message_ISR, NULL);
 }
 
-void CAN_RX_ISRTest(void)
+void CAN_RX_ISRTest(void)//WCET test function
 {
     uint32_t startTime = micros();
 
@@ -129,7 +129,7 @@ void decodeTask(void *pvParameters)
     }
 }
 
-void decodeFunction(void *pvParameters)
+void decodeFunction(void *pvParameters)//WCET test function
 {
     uint8_t local_RX_Message[8] = {0};
 
