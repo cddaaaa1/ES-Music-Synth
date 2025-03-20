@@ -13,7 +13,6 @@
 uint32_t scanKeysIterations = 0;
 TickType_t scanKeysStartTime = 0;
 
-// Use an enum to distinguish the keyboard source
 enum KeyboardType
 {
     KEYBOARD_4,
@@ -30,14 +29,11 @@ struct NoteRef
 // This function fills 5 step-size outputs (max voices) from three keyboards.
 void setStepSizes()
 {
-    // Declare local step-size variables.
     uint32_t localStepSize1 = 0, localStepSize2 = 0, localStepSize3 = 0, localStepSize4 = 0, localStepSize5 = 0;
 
-    // Create a vector to hold the final selected notes.
     std::vector<NoteRef> finalNotes;
     finalNotes.reserve(MAX_VOICES);
 
-    // First, add pressed keys from keys4 (C4).
     for (uint8_t i = 0; i < 12; i++)
     {
         if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
@@ -52,30 +48,34 @@ void setStepSizes()
             xSemaphoreGive(localKeyMutex);
         }
     }
-    // Then, add pressed keys from keys5 (C5).
     for (uint8_t i = 0; i < 12; i++)
     {
-        if (keys5.test(i))
+        if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
         {
-            if (finalNotes.size() < MAX_VOICES)
-                finalNotes.push_back({KEYBOARD_5, i});
-            else
-                break;
+            if (keys5.test(i))
+            {
+                if (finalNotes.size() < MAX_VOICES)
+                    finalNotes.push_back({KEYBOARD_5, i});
+                else
+                    break;
+            }
+            xSemaphoreGive(externalKeyMutex);
         }
     }
-    // Finally, add pressed keys from keys6 (C6).
     for (uint8_t i = 0; i < 12; i++)
     {
-        if (keys6.test(i))
+        if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
         {
-            if (finalNotes.size() < MAX_VOICES)
-                finalNotes.push_back({KEYBOARD_6, i});
-            else
-                break;
+            if (keys6.test(i))
+            {
+                if (finalNotes.size() < MAX_VOICES)
+                    finalNotes.push_back({KEYBOARD_6, i});
+                else
+                    break;
+            }
+            xSemaphoreGive(externalKeyMutex);
         }
     }
-
-    // Now assign the step sizes based on the final selected notes.
     if (finalNotes.size() >= 1)
     {
         switch (finalNotes[0].kb)
@@ -225,10 +225,6 @@ void scanKeysTask(void *pvParameters)
                             TX_Message[2] = lastPressedKey;
                             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
                         }
-                        // if (samplerEnabled && previousInput[keyIndex])
-                        // {
-                        //     sampler_recordEvent('P', moduleOctave, (uint8_t)keyIndex);
-                        // }
                     }
                     if (!previousInput[keyIndex] && colInputs[col])
                     {
@@ -262,18 +258,15 @@ void scanKeysTask(void *pvParameters)
         // If either handshake input has changed, trigger auto-detection
         if (west != prevWest || east != prevEast)
         {
-            autoDetectHandshake(); // Update moduleOctave based on new readings
-            // Broadcast a CAN message to trigger re-detection in all modules
-            TX_Message[0] = 'H';          // Predefined handshake symbol
-            TX_Message[1] = moduleOctave; // New assigned octave
-            // Additional fields (like module ID) can be added here
+            autoDetectHandshake();
+            TX_Message[0] = 'H';
+            TX_Message[1] = moduleOctave;
             xQueueSend(msgOutQ, TX_Message, portMAX_DELAY);
-            // digitalToggle(LED_BUILTIN);
         }
         prevWest = west;
         prevEast = east;
 
-        // **Knob 3 Decoding (A = localInputs[12], B = localInputs[13])**
+        // Knob 3 for volume adjust
         currentKnobState[0] = localInputs[12]; // A
         currentKnobState[1] = localInputs[13]; // B
         sysState.knob3.updateRotation(currentKnobState);
@@ -283,10 +276,10 @@ void scanKeysTask(void *pvParameters)
         std::bitset<1> currentPressKnob2;
         currentPressKnob2[0] = localInputs[20];
 
-        // Update global system state atomically and with mutex(copy the input state method)
+        // Update global system state atomically and with mutex
         if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
         {
-            memcpy(&sysState.inputs, &localInputs, sizeof(sysState.inputs)); // Copy input state
+            memcpy(&sysState.inputs, &localInputs, sizeof(sysState.inputs));
             sysState.knob2.updatePress(currentPressKnob2);
             sysState.knob3.updateRotation(currentKnobState);
             localVolume = sysState.knob3.getRotationValue();
@@ -295,6 +288,129 @@ void scanKeysTask(void *pvParameters)
         sysState.rotationVariable = localRotationVariable;
         __atomic_store_n(&sysState.volume, localVolume, __ATOMIC_RELAXED);
     }
+}
+
+void setStepSizesFunction()
+{
+
+    uint32_t localStepSize1 = 0, localStepSize2 = 0, localStepSize3 = 0, localStepSize4 = 0, localStepSize5 = 0;
+
+    std::vector<NoteRef> finalNotes;
+    finalNotes.reserve(MAX_VOICES);
+
+    for (uint8_t i = 0; i < 12; i++)
+    {
+        if (keys4.test(i))
+        {
+            if (finalNotes.size() < MAX_VOICES)
+                finalNotes.push_back({KEYBOARD_4, i});
+            else
+                break;
+        }
+    }
+    for (uint8_t i = 0; i < 12; i++)
+    {
+        if (keys5.test(i))
+        {
+            if (finalNotes.size() < MAX_VOICES)
+                finalNotes.push_back({KEYBOARD_5, i});
+            else
+                break;
+        }
+    }
+    for (uint8_t i = 0; i < 12; i++)
+    {
+        if (keys6.test(i))
+        {
+            if (finalNotes.size() < MAX_VOICES)
+                finalNotes.push_back({KEYBOARD_6, i});
+            else
+                break;
+        }
+    }
+
+    if (finalNotes.size() >= 1)
+    {
+        switch (finalNotes[0].kb)
+        {
+        case KEYBOARD_4:
+            localStepSize1 = stepSizes4[finalNotes[0].noteIdx];
+            break;
+        case KEYBOARD_5:
+            localStepSize1 = stepSizes5[finalNotes[0].noteIdx];
+            break;
+        case KEYBOARD_6:
+            localStepSize1 = stepSizes6[finalNotes[0].noteIdx];
+            break;
+        }
+    }
+    if (finalNotes.size() >= 2)
+    {
+        switch (finalNotes[1].kb)
+        {
+        case KEYBOARD_4:
+            localStepSize2 = stepSizes4[finalNotes[1].noteIdx];
+            break;
+        case KEYBOARD_5:
+            localStepSize2 = stepSizes5[finalNotes[1].noteIdx];
+            break;
+        case KEYBOARD_6:
+            localStepSize2 = stepSizes6[finalNotes[1].noteIdx];
+            break;
+        }
+    }
+    if (finalNotes.size() >= 3)
+    {
+        switch (finalNotes[2].kb)
+        {
+        case KEYBOARD_4:
+            localStepSize3 = stepSizes4[finalNotes[2].noteIdx];
+            break;
+        case KEYBOARD_5:
+            localStepSize3 = stepSizes5[finalNotes[2].noteIdx];
+            break;
+        case KEYBOARD_6:
+            localStepSize3 = stepSizes6[finalNotes[2].noteIdx];
+            break;
+        }
+    }
+    if (finalNotes.size() >= 4)
+    {
+        switch (finalNotes[3].kb)
+        {
+        case KEYBOARD_4:
+            localStepSize4 = stepSizes4[finalNotes[3].noteIdx];
+            break;
+        case KEYBOARD_5:
+            localStepSize4 = stepSizes5[finalNotes[3].noteIdx];
+            break;
+        case KEYBOARD_6:
+            localStepSize4 = stepSizes6[finalNotes[3].noteIdx];
+            break;
+        }
+    }
+    if (finalNotes.size() >= 5)
+    {
+        switch (finalNotes[4].kb)
+        {
+        case KEYBOARD_4:
+            localStepSize5 = stepSizes4[finalNotes[4].noteIdx];
+            break;
+        case KEYBOARD_5:
+            localStepSize5 = stepSizes5[finalNotes[4].noteIdx];
+            break;
+        case KEYBOARD_6:
+            localStepSize5 = stepSizes6[finalNotes[4].noteIdx];
+            break;
+        }
+    }
+
+    // Atomically update the global step-size variables.
+    __atomic_store_n(&currentStepSize1, localStepSize1, __ATOMIC_RELAXED);
+    __atomic_store_n(&currentStepSize2, localStepSize2, __ATOMIC_RELAXED);
+    __atomic_store_n(&currentStepSize3, localStepSize3, __ATOMIC_RELAXED);
+    __atomic_store_n(&currentStepSize4, localStepSize4, __ATOMIC_RELAXED);
+    __atomic_store_n(&currentStepSize5, localStepSize5, __ATOMIC_RELAXED);
 }
 
 void scanKeysFunction(void *pvParameters)
@@ -315,12 +431,11 @@ void scanKeysFunction(void *pvParameters)
         int localVolume = sysState.volume;
         std::bitset<32> previousInput = sysState.inputs;
 
-        // 模拟最坏情况：所有按键被按下
-        localInputs.set(); // 设置所有按键为按下状态
+        localInputs.set();
 
         for (uint8_t row = 0; row < 7; row++)
         {
-            // 选定行
+
             digitalWrite(REN_PIN, LOW);
             digitalWrite(RA0_PIN, row & 0x01);
             digitalWrite(RA1_PIN, row & 0x02);
@@ -328,9 +443,8 @@ void scanKeysFunction(void *pvParameters)
             digitalWrite(REN_PIN, HIGH);
             delayMicroseconds(3);
 
-            // 读取所有列
             std::bitset<4> colInputs;
-            colInputs.set(); // 模拟所有按键被按下
+            colInputs.set();
             digitalWrite(REN_PIN, LOW);
 
             for (uint8_t col = 0; col < 4; col++)
@@ -338,7 +452,6 @@ void scanKeysFunction(void *pvParameters)
                 int keyIndex = row * 4 + col;
                 localInputs[keyIndex] = colInputs[col];
 
-                // 处理键盘状态变化（最坏情况：所有按键都被按下）
                 if (keyIndex <= 11 && keyIndex >= 0)
                 {
                     if (previousInput[keyIndex] && !colInputs[col])
@@ -362,10 +475,8 @@ void scanKeysFunction(void *pvParameters)
             }
         }
 
-        // 执行最重计算的函数
-        setStepSizes();
+        setStepSizesFunction();
 
-        // 读取旋钮状态（最坏情况：旋钮在最大计算负载时变化）
         currentKnobState.set();
         knob3.updateRotation(currentKnobState);
         localVolume = knob3.getRotationValue();

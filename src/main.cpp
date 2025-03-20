@@ -1,14 +1,16 @@
-#include "globals.h" // For all our shared globals
-#include "can.h"     // For CAN tasks and ISRs
-#include "key.h"     // for scanKeysTask(...)
-#include "display.h" // For scanKeysTask, displayUpdateTask
+#include "globals.h" 
+#include "can.h"     
+#include "key.h"     
+#include "display.h" 
 #include "pins.h"
 #include "isr.h"
 #include "sampler.h"
 #include "autodetection.h"
 
-// #define TestMode
-// #define SCAN_KEYS
+//uncomment below to enter testmode
+
+//#define TestMode
+//#define SCAN_KEYS
 // #define STATSTASK
 //  #define DECODE
 //  #define METRONOME
@@ -18,23 +20,22 @@
 
 void printTaskStats()
 {
-  char stats[512]; // 存储任务执行时间统计数据
+  char stats[512]; 
   vTaskGetRunTimeStats(stats);
-  Serial.println(stats); // 通过串口输出结果
+  Serial.println(stats); 
 }
 
 void statsTask(void *pvParameters)
 {
   while (1)
   {
-    vTaskDelay(pdMS_TO_TICKS(5000)); // Run every 5 seconds
+    vTaskDelay(pdMS_TO_TICKS(5000)); 
 
     // Print runtime stats
     char stats[512];
     vTaskGetRunTimeStats(stats);
     Serial.println(stats);
 
-    // Calculate average execution time for scanKeysTask
     TickType_t currentTime = xTaskGetTickCount();
     if (scanKeysIterations > 0)
     {
@@ -83,11 +84,10 @@ void statsTask(void *pvParameters)
 
 void setup()
 {
-  // ----------------- Pin Setup -----------------
   pinMode(D3, OUTPUT);
   pinMode(D6, OUTPUT);
   pinMode(D12, OUTPUT);
-  pinMode(A5, OUTPUT); // REN
+  pinMode(A5, OUTPUT); 
   pinMode(D11, OUTPUT);
   pinMode(A4, OUTPUT);
   pinMode(A3, OUTPUT);
@@ -100,7 +100,6 @@ void setup()
   pinMode(JOYX_PIN, INPUT);
   pinMode(JOYY_PIN, INPUT);
 
-  // Display setup
   setOutMuxBit(DRST_BIT, LOW);
   delayMicroseconds(2);
   setOutMuxBit(DRST_BIT, HIGH);
@@ -111,17 +110,14 @@ void setup()
   Serial.println("Hello World");
 
 #ifndef TestMode
-  // Audio Timer for 22 kHz
   sampleTimer.setOverflow(fs, HERTZ_FORMAT);
   sampleTimer.attachInterrupt(sampleISR);
   sampleTimer.resume();
 
-  // handshake to determine moduleOctave
   autoDetectHandshake();
   Serial.print("Detected module octave: ");
   Serial.println(moduleOctave);
 
-  // Create RTOS tasks
   xTaskCreate(scanKeysTask, "scanKeys", 256, NULL, 6, &scanKeysHandle);
   xTaskCreate(displayUpdateTask, "displayUpdate", 256, NULL, 7, &displayTaskHandle);
 
@@ -157,19 +153,16 @@ void setup()
   // Counting semaphore for CAN TX
   CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
 
-  // Start FreeRTOS
   vTaskStartScheduler();
 
 #else
   // // Test mode
   // noInterrupts();
 
-  // handshake to determine moduleOctave
   autoDetectHandshake();
   Serial.print("Detected module octave: ");
   Serial.println(moduleOctave);
 #ifdef STATSTASK
-  // Create RTOS tasks
   xTaskCreate(statsTask, "StatsTask", 256, NULL, 1, NULL);
 #endif
 #ifdef SCAN_KEYS
@@ -199,7 +192,6 @@ void setup()
 // Create decode & transmit tasks
 #ifdef DECODE
   xTaskCreate(decodeFunction, "decodeTest", 128, NULL, 3, NULL);
-  // **预填充队列**
   uint8_t testMsg[8] = {'P', 5, 3, 0, 0, 0, 0, 0};
   for (int i = 0; i < 384; i++)
   {
@@ -209,7 +201,6 @@ void setup()
 
 #ifdef CAN_TX
   xTaskCreate(CAN_TX_Function, "CAN_TX_Test", 128, NULL, 2, NULL);
-  // **预填充队列**
   uint8_t testMsg[8] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22};
 
   for (int i = 0; i < 384; i++)
@@ -231,21 +222,18 @@ void setup()
   }
 
 #ifdef SAMPLE_ISR
-  // interrupts();
   sampleTimer.setOverflow(fs, HERTZ_FORMAT);
   sampleTimer.attachInterrupt(sampleISRTest);
   sampleTimer.resume();
 #endif
 
-  // Counting semaphore for CAN TX
   CAN_TX_Semaphore = xSemaphoreCreateCounting(3, 3);
 
-  // Start FreeRTOS
   vTaskStartScheduler();
 #endif
 }
 
 void loop()
 {
-  // Not used; tasks run under FreeRTOS
+  // Not used
 }

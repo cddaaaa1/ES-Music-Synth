@@ -65,14 +65,14 @@ U8G2_SSD1305_128X32_ADAFRUIT_F_HW_I2C u8g2(U8G2_R0);
 TaskHandle_t scanKeysHandle = NULL;
 TaskHandle_t displayTaskHandle = NULL;
 
-// --------- Shared Helper: setOutMuxBit -----------
+
 void setOutMuxBit(const uint8_t bitIdx, const bool value)
 {
-    digitalWrite(A5, LOW);            // REN pin
-    digitalWrite(D3, bitIdx & 0x01);  // RA0
-    digitalWrite(D6, bitIdx & 0x02);  // RA1
-    digitalWrite(D12, bitIdx & 0x04); // RA2
-    digitalWrite(D11, value);         // OUT pin
+    digitalWrite(A5, LOW);            
+    digitalWrite(D3, bitIdx & 0x01);  
+    digitalWrite(D6, bitIdx & 0x02);  
+    digitalWrite(D12, bitIdx & 0x04); 
+    digitalWrite(D11, value);         
     digitalWrite(A5, HIGH);
     delayMicroseconds(2);
     digitalWrite(A5, LOW);

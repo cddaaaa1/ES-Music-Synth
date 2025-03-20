@@ -16,18 +16,18 @@ Our project realised the basic functions of keyboard,
 
 ## 1. Functionalites and video demonstrations
 
-1. **Music Synthesisor**
-   A keyboard from Octave 4 to 6
-2. **Automatic octave detection**
+1. **Music Synthesisor**:
+   A keyboard spanning Octave 4 to Octave 6.
+2. **Automatic octave detection**:
    Synth modules use handshaking to automatically set up their roles and octaves
-3. **Polyphony**
+3. **Polyphony**:
    Play multiple notes simultaneously
    [Download the video](poly.mp4)
-4. **Volume control**
+4. **Volume control**:
    Adjust volume using knob3
    [Download the video](volume.mp4)
-5. **Music sampler**
-   Click knob2 to start sampler mode.
+5. **Music sampler**:
+   Click Knob2 to enter Sampler Mode. In this mode, the Synth Module loops a bar while recording the keys you play. The recorded keys will be replayed in the next loop.The sampler also support polyphony. Click Knob2 again to exit Sampler Mode.
    [Download the video](sampler.mp4)
 
 ## 2. Task descriptions
@@ -123,7 +123,7 @@ Following the lab instruction, any thread can call `xQueueSend(msgOutQ, TX_Messa
 
 ### Mutex Overview
 
-The following table outlines the mutexes used in the system, the data they protect, and a brief description of their purpose. Having these mutexes ensures thread-safe access and prevents data corruption or race conditions.
+The following table outlines the mutexes used in the system, the data they protect, and a brief description of their purpose. Having these mutexes ensures thread-safe access and prevents data corruption or race conditions. More information about mutex usage can be found in (#4-function-descriptions) and (#2-task-descriptions).
 
 | Mutex Name              | Data it Protects                                                  | Description                                                                                                 |
 | ----------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |

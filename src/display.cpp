@@ -1,7 +1,7 @@
 #include "display.h"
-#include "globals.h" // for sysState, RX_Message, keys4, keys5, u8g2, etc.
-#include "pins.h"    // if you need pin definitions, e.g. LED pins
-#include <U8g2lib.h> // for u8g2
+#include "globals.h"
+#include "pins.h"    
+#include <U8g2lib.h> 
 #include <bitset>
 
 uint32_t displayIterations = 0;
@@ -18,47 +18,14 @@ void displayUpdateTask(void *pvParameters)
         digitalToggle(LED_BUILTIN);
         std::bitset<32> localInputs;
 
-        // Lock mutex briefly to copy global state
-        // if (xSemaphoreTake(sysState.mutex, portMAX_DELAY) == pdTRUE)
-        // {
-        //     memcpy(&localInputs, &sysState.inputs, sizeof(localInputs));
-        //     xSemaphoreGive(sysState.mutex);
-        // }
-
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_ncenB08_tr);
-        // u8g2.drawStr(2, 10, "Note:");
-        // u8g2.setCursor(2, 20);
-
-        // int lastPressedKey = -1;
-        // for (int i = 0; i < 12; i++)
-        // {
-        //   if (!localInputs[i])
-        //   {
-        //     lastPressedKey = i;
-        //   }
-        // }
-
-        // if (lastPressedKey >= 0)
-        // {
-        //   const char *noteNames[] = {"C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5"};
-        //   u8g2.print(noteNames[lastPressedKey]);
-        // }
-        // else
-        // {
-        //   u8g2.print("None");
-        // }
-
         if (moduleOctave == 4)
         {
             u8g2.drawStr(2, 10, "Notes:");
 
-            // Build a string of currently pressed local and remote keys
-            // For local keys (C4 range) and remote keys (C5 range)
             int cursorx = 40;
 
-            // For local keys:
-            // which bit = true? Show that note name with "C4" style
             if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
             {
                 for (int i = 0; i < 12; i++)
@@ -80,7 +47,6 @@ void displayUpdateTask(void *pvParameters)
                 {
                     if (keys5[i])
                     {
-                        // remote note names for C5
                         const char *remoteNoteNames[12] =
                             {"C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5"};
                         u8g2.setCursor(cursorx, 10);
@@ -147,13 +113,11 @@ void displayUpdateFunction(void *pvParameters)
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_ncenB08_tr);
 
-        // **最坏情况: 所有音符显示**
         u8g2.drawStr(2, 10, "Notes:");
 
         int cursorx = 40;
         for (int i = 0; i < 12; i++)
         {
-            // 假设所有 keys4, keys5, keys6 均被按下
             const char *localNoteNames[12] =
                 {"C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4"};
             u8g2.setCursor(cursorx, 10);
@@ -173,22 +137,18 @@ void displayUpdateFunction(void *pvParameters)
             cursorx += 15;
         }
 
-        // **最坏情况: 显示最大 Volume 数值**
         u8g2.setCursor(2, 20);
         u8g2.print("Volume:");
         u8g2.setCursor(50, 20);
-        u8g2.print(100); // 模拟最大音量值
+        u8g2.print(100);
 
-        // **最坏情况: 采样状态不断变化**
         u8g2.setCursor(2, 30);
         u8g2.print("Sampler Enabled");
 
-        // **最坏情况: 所有 Octave 信息均显示**
         u8g2.drawStr(2, 40, "Octave 4");
         u8g2.drawStr(2, 50, "Octave 5");
         u8g2.drawStr(2, 60, "Octave 6");
 
-        // **执行缓冲区发送**
         u8g2.sendBuffer();
     }
 }

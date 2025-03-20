@@ -24,7 +24,6 @@ static const uint32_t fs = 22000;
 extern const uint32_t stepSizes4[12];
 extern const uint32_t stepSizes5[12];
 extern const uint32_t stepSizes6[12];
-// ------------------ Global Variables ---------------
 extern volatile uint32_t currentStepSize;
 extern volatile uint32_t currentStepSize1;
 extern volatile uint32_t currentStepSize2;
@@ -54,7 +53,7 @@ extern SemaphoreHandle_t CAN_TX_Semaphore;
 
 extern uint8_t RX_Message[8];
 
-// A struct to hold system-wide state
+// A struct to hold system state
 struct SystemState
 {
     std::bitset<32> inputs;
