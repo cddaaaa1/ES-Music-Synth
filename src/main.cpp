@@ -9,13 +9,14 @@
 
 //uncomment below to enter testmode
 
-//#define TestMode
+#define TestMode
+ #define STATSTASK
 //#define SCAN_KEYS
-// #define STATSTASK
+// #define DISPLAYTEST
 //  #define DECODE
-//  #define METRONOME
 //  #define SAMPLER
 //  #define CAN_TX
+//  #define CAN_RX_TX
 //  #define SAMPLE_ISR
 
 void printTaskStats()
@@ -183,11 +184,13 @@ void setup()
   msgOutQ = xQueueCreate(384, 8);
 
   // Init CAN
+  #ifdef CAN_RX_TX
   CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
   CAN_RegisterRX_ISR(CAN_RX_ISRTest);
   CAN_RegisterTX_ISR(CAN_TX_ISR);
   CAN_Start();
+  #endif
 
 // Create decode & transmit tasks
 #ifdef DECODE
@@ -216,9 +219,9 @@ void setup()
     xTaskCreate(samplerFunction, "samplerTest", 256, NULL, 5, NULL);
 #endif
 
-#ifdef METRONOME
-    xTaskCreate(metronomeFunction, "metronomeTest", 128, NULL, 2, NULL);
-#endif
+// #ifdef METRONOME
+//     xTaskCreate(metronomeFunction, "metronomeTest", 128, NULL, 2, NULL);
+// #endif
   }
 
 #ifdef SAMPLE_ISR

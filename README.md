@@ -15,3 +15,7 @@
   [StackSynth V1.1 Schematic](doc/StackSynth-v1.pdf)
 
   [StackSynth V2.1 Schematic](doc/StackSynth-v2.pdf)
+
+## Link to the final report
+
+  [Report](REPORT.md)

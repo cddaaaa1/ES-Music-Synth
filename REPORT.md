@@ -2,7 +2,7 @@
 
 # Music Synthesizer
 
-Our project realised the basic functions of keyboard,
+Our project works as a music sampler in form of 3 octave keyborad, support maximum 5 keytones chord with a knob volume control.
 
 ## Table of Contents
 
@@ -69,10 +69,10 @@ For detailed descriptions, refer to [function.md](function.md).
 1. **Worst case execution time summery**
    | Task name | CPU usage (isolated) |Worst case execution time | Testing method |
    |----------------|-----------------------|------------------|------------------|
-   | scanKeysTask | 89% | 170 µs | [scanKeysFunction](wcet.md#scankeysfunction)|
-   | displayUpdateTask | 22% | 99840 µs | [displayUpdateFunction](wcet.md#displayupdatefunction)|
-   | decodeTask | <1% | 10700 µs | [decodeFunction](wcet.md#decodefunction)|
-   | CN_TX_Task | <1% | 6870 µs | [CN_TX_Function](wcet.md#can_tx_function)|
+   | scanKeysTask | 93% | 110 µs | [scanKeysFunction](wcet.md#scankeysfunction)|
+   | displayUpdateTask | 19% | 99840 µs | [displayUpdateFunction](wcet.md#displayupdatefunction)|
+   | decodeTask | 10% | 50660 µs | [decodeFunction](wcet.md#decodefunction)|
+   | CN_TX_Task | 1% | 6870 µs | [CN_TX_Function](wcet.md#can_tx_function)|
    | samplerTask | 5% | 1134890 µs | [samplerFunction](wcet.md#samplerfunction)|
    | metronemoTask | 1% | 199250 µs | [metronemoFunction](wcet.md#metronomefunction)|
    | sample_ISR | | 15 µs | [sampleISRTest](wcet.md#sampleisrtest)|
@@ -80,13 +80,15 @@ For detailed descriptions, refer to [function.md](function.md).
 **Testing Methodology**
 
 **1. Mode Switching**
-Testing is controlled via `#ifdef TestMode`, allowing individual task isolation.  
+-Testing is controlled via `#ifdef TestMode`, allowing individual task isolation.  
+-Ensuring to `#define STATSTASK` when switching to the TestMode to start `vTaskGetRunTimeStats()` thread.
+
 Example:
 
 ```cpp
 #define TestMode   // Runs TestMode setup()
+#define STATSTASK  // Runs vTaskGetRunTimeStats()
 #define SCAN_KEYS  // Runs scanKeysFunction
-#define METRONOME  // Runs metronomeFunction
 ```
 
 **2. Measuring WCET for Tasks**
