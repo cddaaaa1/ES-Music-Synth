@@ -22,13 +22,13 @@ Our project works as a music sampler in form of 3 octave keyborad, support maxim
    Synth modules use handshaking to automatically set up their roles and octaves
 3. **Polyphony**:
    Play multiple notes simultaneously
-   [Download the video](poly.mp4)
+   [veiw on microsfot stream](https://imperiallondon-my.sharepoint.com/:v:/r/personal/dy622_ic_ac_uk/Documents/poly%201.mp4?csf=1&web=1&e=dUEdel&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D) or [Download the video](poly.mp4)
 4. **Volume control**:
    Adjust volume using knob3
-   [Download the video](volume.mp4)
+   [veiw on microsfot stream](https://imperiallondon-my.sharepoint.com/:v:/r/personal/dy622_ic_ac_uk/Documents/volume%202.mp4?csf=1&web=1&e=6xkEwX&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D)or [Download the video](volume.mp4)
 5. **Music sampler**:
    Click Knob2 to enter Sampler Mode. In this mode, the Synth Module loops a bar while recording the keys you play. The recorded keys will be replayed in the next loop.The sampler also support polyphony. Click Knob2 again to exit Sampler Mode.
-   [Download the video](sampler.mp4)
+   [view on microsfot stream](https://imperiallondon-my.sharepoint.com/:v:/r/personal/dy622_ic_ac_uk/Documents/sampler%203.mp4?csf=1&web=1&e=8Bkbky&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D)or[Download the video](sampler.mp4)
 
 ## 2. Task descriptions
 

@@ -1,36 +1,36 @@
-#include "globals.h" 
-#include "can.h"     
-#include "key.h"     
-#include "display.h" 
+#include "globals.h"
+#include "can.h"
+#include "key.h"
+#include "display.h"
 #include "pins.h"
 #include "isr.h"
 #include "sampler.h"
 #include "autodetection.h"
 
-//uncomment below to enter testmode
+// uncomment below to enter testmode
 
-#define TestMode
- #define STATSTASK
-//#define SCAN_KEYS
-// #define DISPLAYTEST
-//  #define DECODE
-//  #define SAMPLER
-//  #define CAN_TX
-//  #define CAN_RX_TX
-//  #define SAMPLE_ISR
+// #define TestMode
+// #define STATSTASK
+// #define SCAN_KEYS
+//  #define DISPLAYTEST
+//   #define DECODE
+//   #define SAMPLER
+//   #define CAN_TX
+//   #define CAN_RX_TX
+//   #define SAMPLE_ISR
 
 void printTaskStats()
 {
-  char stats[512]; 
+  char stats[512];
   vTaskGetRunTimeStats(stats);
-  Serial.println(stats); 
+  Serial.println(stats);
 }
 
 void statsTask(void *pvParameters)
 {
   while (1)
   {
-    vTaskDelay(pdMS_TO_TICKS(5000)); 
+    vTaskDelay(pdMS_TO_TICKS(5000));
 
     // Print runtime stats
     char stats[512];
@@ -88,7 +88,7 @@ void setup()
   pinMode(D3, OUTPUT);
   pinMode(D6, OUTPUT);
   pinMode(D12, OUTPUT);
-  pinMode(A5, OUTPUT); 
+  pinMode(A5, OUTPUT);
   pinMode(D11, OUTPUT);
   pinMode(A4, OUTPUT);
   pinMode(A3, OUTPUT);
@@ -148,7 +148,7 @@ void setup()
   {
     sampler_init();
     xTaskCreate(samplerTask, "samplerTask", 256, NULL, 3, NULL);
-    // xTaskCreate(metronomeTask, "metronomeTask", 128, NULL, 2, NULL);
+    xTaskCreate(metronomeTask, "metronomeTask", 128, NULL, 2, NULL);
   }
 
   // Counting semaphore for CAN TX
@@ -183,14 +183,14 @@ void setup()
   msgInQ = xQueueCreate(384, 8);
   msgOutQ = xQueueCreate(384, 8);
 
-  // Init CAN
-  #ifdef CAN_RX_TX
+// Init CAN
+#ifdef CAN_RX_TX
   CAN_Init(false);
   setCANFilter(0x123, 0x7ff);
   CAN_RegisterRX_ISR(CAN_RX_ISRTest);
   CAN_RegisterTX_ISR(CAN_TX_ISR);
   CAN_Start();
-  #endif
+#endif
 
 // Create decode & transmit tasks
 #ifdef DECODE
@@ -219,9 +219,9 @@ void setup()
     xTaskCreate(samplerFunction, "samplerTest", 256, NULL, 5, NULL);
 #endif
 
-// #ifdef METRONOME
-//     xTaskCreate(metronomeFunction, "metronomeTest", 128, NULL, 2, NULL);
-// #endif
+    // #ifdef METRONOME
+    //     xTaskCreate(metronomeFunction, "metronomeTest", 128, NULL, 2, NULL);
+    // #endif
   }
 
 #ifdef SAMPLE_ISR

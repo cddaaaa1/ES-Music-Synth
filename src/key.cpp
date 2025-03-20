@@ -34,9 +34,9 @@ void setStepSizes()
     std::vector<NoteRef> finalNotes;
     finalNotes.reserve(MAX_VOICES);
 
-    for (uint8_t i = 0; i < 12; i++)
+    if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
     {
-        if (xSemaphoreTake(localKeyMutex, portMAX_DELAY) == pdTRUE)
+        for (uint8_t i = 0; i < 12; i++)
         {
             if (keys4.test(i))
             {
@@ -45,12 +45,12 @@ void setStepSizes()
                 else
                     break;
             }
-            xSemaphoreGive(localKeyMutex);
         }
+        xSemaphoreGive(localKeyMutex);
     }
-    for (uint8_t i = 0; i < 12; i++)
+    if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
     {
-        if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
+        for (uint8_t i = 0; i < 12; i++)
         {
             if (keys5.test(i))
             {
@@ -59,12 +59,12 @@ void setStepSizes()
                 else
                     break;
             }
-            xSemaphoreGive(externalKeyMutex);
         }
+        xSemaphoreGive(externalKeyMutex);
     }
-    for (uint8_t i = 0; i < 12; i++)
+    if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
     {
-        if (xSemaphoreTake(externalKeyMutex, portMAX_DELAY) == pdTRUE)
+        for (uint8_t i = 0; i < 12; i++)
         {
             if (keys6.test(i))
             {
@@ -73,8 +73,8 @@ void setStepSizes()
                 else
                     break;
             }
-            xSemaphoreGive(externalKeyMutex);
         }
+        xSemaphoreGive(externalKeyMutex);
     }
     if (finalNotes.size() >= 1)
     {

@@ -13,7 +13,7 @@ TickType_t metronomeStartTime = 0;
 const uint32_t BPM = 100;       // Beats per minute
 const uint32_t beatsPerBar = 4; // For a 4/4 time signature
 // Compute samplerLoopLength based on BPM (in milliseconds):
-const uint32_t samplerLoopLength = (60000UL / BPM) * beatsPerBar; // 2400 ms at 100 BPM
+const uint32_t samplerLoopLength = (60000UL / BPM) * beatsPerBar*2; // 2400 ms at 100 BPM
 
 const int MAX_EVENTS = 128;
 static NoteEvent recordingBuffer[MAX_EVENTS];
